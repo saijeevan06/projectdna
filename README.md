@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 10 — interactive landing experience**
+**Build 11 — forest-and-lime visual redesign**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -21,6 +21,8 @@ Project DNA helps students and developers take a practical next step with a proj
 - Admins sign in through Supabase Auth and an active-user allowlist to view aggregate demo counts, self-reported eligibility, sources, daily activity, funnel and referral totals. No identities are returned.
 - Path B offers selectable role suggestions across software/product, AI/data, infrastructure/security and core engineering, while retaining free-text roles.
 - Landing now has section navigation, direct hash routes for both journeys, featured role shortcuts, a moving interest strip, scroll progress, and reduced-motion-aware reveal animations.
+- Replaced the generic purple/lilac palette with forest ink, signal lime and warm paper; updated navigation, forms, buttons, result cards, dashboard, modal and footer colors for one visual system.
+- Added stronger focus states and contrast on the path cards.
 - Users can review/edit answers; profile and project context remain session-scoped and are not saved.
 - GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 

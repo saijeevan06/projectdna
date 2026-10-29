@@ -172,6 +172,34 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 07: workshop conversion flow with honest official handoff vs clearly labeled demo capture. Continue with unique registration handling, optional referrals and the basic admin funnel.
 
+## Build 11 — forest-and-lime visual redesign
+
+**Status:** Complete locally; Supabase integration remains pending.
+**Scope:** Replace the generic purple theme with a distinctive visual system and clarify current backend/course blockers.
+
+### Delivered
+
+- Replaced the palette with forest ink, signal lime and warm paper across landing, navigation, CTAs, sections, cards, forms, modal, dashboard and footer.
+- Improved path-card contrast and keyboard focus outlines; retained scroll reveals, marquee, hover motion and reduced-motion behavior.
+- Found the URL and anon key values reversed in `.env.local`; swapped them into their expected variables without printing either value. The local file remains Git-ignored.
+- Audited AI configuration: provider code is in `supabase/functions/_shared/ai.ts`; Gemini/Groq API keys and model IDs are Edge Function settings, never browser keys.
+- Clarified that registration remains demo-only without an approved workshop/course URL; course curriculum/content is not in this repository.
+
+### Verification and blockers
+
+- `npm run build` completed successfully.
+- Supabase CLI was not available globally; the temporary `npx` CLI check stalled without output and was stopped. No Supabase connector tools are exposed in this workspace, so migrations were not applied.
+- Admin invitation requires the recipient email. No Auth user was created.
+- Lovable editing tools are not available to this task; the redesign was made in the local project code.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 11 - forest and lime visual redesign`.
+
+### Next build
+
+- Build 12: authenticate a usable Supabase CLI/MCP connection, apply and verify migrations, deploy functions, create the admin account/allowlist, and migrate API-key usage.
+
 ## Build 10 — interactive landing experience
 
 **Status:** Complete; live deployment remains pending.

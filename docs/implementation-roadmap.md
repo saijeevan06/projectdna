@@ -59,17 +59,18 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 ## Current checkpoint and next build
 
-**Build 10:** Landing includes section links, shareable `#improve` / `#discover` entry routes, direct role shortcuts, a motion strip, scroll progress and entrance reveals. Reduced-motion preferences are respected. Build 09 role suggestion chips remain in the Path B flow.
+**Build 11:** The shared interface now uses forest ink, signal lime and warm paper instead of the prior purple/lilac look. Navigation, CTAs, forms, cards, dashboard and footer use the same palette; focus and hover states remain visible. Build 10 routes and motion effects remain, with reduced-motion support.
 
-**Next:** Build 11 — migrate function authentication from the legacy anon bearer token to Supabase's publishable-key pattern, then apply migrations and deploy/validate functions against the connected project. Afterward complete the admin allowlist, optional model secrets, approved workshop destination, abuse/retention safeguards, mobile QA and deployment.
+**Next:** Build 12 — complete Supabase setup. The URL and legacy JWT anon key were found swapped in `.env.local` and corrected locally. The CLI install/check did not complete and no Supabase connector is available in this Codex workspace, so migrations have not been applied. Authenticate a usable Supabase CLI/MCP connection, link the project, apply migrations, deploy functions and verify live behavior. Migrate to publishable-key auth before switching away from the legacy key.
 
 ## Still to complete
 
-- Paste `VITE_SUPABASE_URL` and the current legacy JWT `anon` key into the newly created, ignored `.env.local`; restart Vite. These are enough for the current browser calls, but do not deploy the database/functions by themselves.
+- `.env.local` contains the corrected URL and anon key and is ignored by Git; restart Vite so it reloads them. They are enough for current browser calls, but do not deploy database/functions by themselves.
 - Link the Supabase project with its project reference, apply the two SQL migrations, deploy all four functions and verify the database RPCs/admin metrics against live records.
-- Create an Auth user and add its UUID to `public.admin_users`. Hosted Supabase already provides the current legacy service-role variable to Edge Functions; never put it in the frontend env.
+- Create/invite the requested Auth user (recipient email still needed) and add its UUID to `public.admin_users`. Hosted Supabase provides the current legacy service-role variable to Edge Functions; never put it in frontend env.
 - Add Gemini/Groq secrets only if live AI tailoring is desired. Add the approved workshop URL before representing that path as official; otherwise the CTA correctly remains demo-only.
 - Add per-user/IP abuse controls and a data retention/deletion process. Validate Edge Function CORS against the deployed domain.
 - Close specification gaps: shareable/downloadable result cards and an admin `/500` goal indicator are not implemented. Student/developer is currently asked during demo registration rather than before choosing a path; decide whether to move it earlier.
 - Finish P1 date/source filters and CSV export, recommendation rerun and persistent share pages only if they remain within assessment time.
 - Complete live P0 acceptance/failure checks and the assessment outputs (growth plan, real AI learning notes, 3-minute demo and reflection answers).
+- The current workshop CTA opens the demo registration dialog unless `VITE_WORKSHOP_URL` is set. No course curriculum/content is in this repository; configure the approved workshop/course URL or provide approved materials before we present an in-site course page.
