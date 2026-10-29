@@ -11,22 +11,22 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 - Supabase Auth Site URL is `http://localhost:5173`.
 - Supabase Auth Redirect URLs includes `http://localhost:5173/**`.
 - `.env.local` has non-empty `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` entries and is ignored by Git; secret values were not included in documentation.
-- The project’s previous invite link is expired and requires a replacement before account setup can finish.
+- The existing Auth user is confirmed and has signed in. No replacement invitation is needed.
 
 ### Still pending
 
-- Resend the Auth invitation, apply the project migrations, deploy the Edge Functions, and verify the live app against Supabase.
+- Apply the project migrations, deploy the Edge Functions, and verify the live app against Supabase.
 - Allowlist the invited Auth user after migrations create the admin table.
 - Add production and preview Vercel URLs to Supabase Auth after a deployment domain is available.
 - The Supabase/Vercel connectors and CLIs are not available in this Codex execution context, so hosted changes beyond the dashboard URL verification are not yet applied.
 
 ### Checkpoint
 
-- Git commit records this documentation/setup checkpoint.
+- Follow-up Git checkpoint records the confirmed Auth status.
 
 ### Next build
 
-- Build 14: complete Supabase Auth invitation, schema, function deployment and end-to-end verification; preserve this order so the admin allowlist is added only after its table exists.
+- Build 14: apply schema migrations, deploy the Edge Functions and verify the live integration; then add the confirmed Auth user to the admin allowlist.
 
 ## Build 02 — shared profile intake and review
 

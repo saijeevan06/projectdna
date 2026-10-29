@@ -63,9 +63,9 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 **Build 12:** The local app now handles Supabase invite redirects, lets invitees set a password, and shows a recovery message for expired/used links. The app is on port 5173; the screenshot showed a redirect to port 3000.
 
-**Build 13 setup checkpoint:** Supabase Authentication → URL Configuration now has Site URL `http://localhost:5173` and Redirect URL `http://localhost:5173/**`, verified in the project dashboard. `.env.local` has non-empty `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` entries and remains ignored by Git. The original invite link is expired; a replacement invite is still required. Production URL redirects must be added when a deployment domain is chosen.
+**Build 13 setup checkpoint:** Supabase Authentication → URL Configuration has Site URL `http://localhost:5173` and Redirect URL `http://localhost:5173/**`, verified in the project dashboard. `.env.local` has non-empty `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` entries and remains ignored by Git. The existing Auth user is confirmed and has signed in, so no replacement invite is needed. Production URL redirects must be added when a deployment domain is chosen.
 
-**Next:** Build 14 — resend the expired invite, apply migrations, deploy functions and verify live behavior. Then add the invited Auth UUID to the admin allowlist and migrate to publishable-key auth before switching away from the legacy key. The Supabase and Vercel connectors are not exposed as tools in this Codex session, and neither CLI is installed here, so hosted database/deployment operations are still pending. Add production and preview deployment URLs to Supabase Auth once the Vercel domain is known.
+**Next:** Build 14 — apply migrations, deploy functions and verify live behavior. Then add the confirmed Auth user's UUID to the admin allowlist and migrate to publishable-key auth before switching away from the legacy key. The Supabase and Vercel connectors are not exposed as tools in this Codex session, and neither CLI is installed here, so hosted database/deployment operations are still pending. Add production and preview deployment URLs to Supabase Auth once the Vercel domain is known.
 
 ## Still to complete
 
