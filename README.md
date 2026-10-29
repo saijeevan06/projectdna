@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 16 — MVP readiness and Vercel handoff**
+**Build 17 — AI configured and Vercel deployment ready**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -22,6 +22,7 @@ Project DNA helps students and developers take a practical next step with a proj
 - Demo registrants can optionally share a referral link; valid referrals are counted in aggregate and never required.
 - Admins sign in through Supabase Auth and an active-user allowlist to view aggregate demo counts, self-reported eligibility, sources, daily activity, funnel and referral totals. No identities are returned.
 - The admin view shows progress toward 500 eligible student demo registrations and labels eligibility as self-reported.
+- Gemini is configured as the server-side AI provider through the Supabase `GEMINI_API_KEY` secret; no provider key is part of the frontend build.
 - Path B offers selectable role suggestions across software/product, AI/data, infrastructure/security and core engineering, while retaining free-text roles.
 - Landing now has section navigation, direct hash routes for both journeys, featured role shortcuts, a moving interest strip, scroll progress, and reduced-motion-aware reveal animations.
 - Replaced the generic purple/lilac palette with forest ink, signal lime and warm paper; updated navigation, forms, buttons, result cards, dashboard, modal and footer colors for one visual system.
@@ -57,7 +58,7 @@ values ('AUTH_USER_UUID', true)
 on conflict (user_id) do update set is_active = true;
 ```
 
-Both migrations have been applied to the live Supabase project, and all four Edge Functions are deployed with JWT verification enabled. End-to-end registration/referral/admin journeys still need a live review. Dashboard-applied migrations are not yet reconciled into CLI migration history; do that before any `supabase db push`.
+Both migrations have been applied to the live Supabase project, and all four Edge Functions are active with JWT verification enabled. The Gemini API key is now configured in Supabase Secrets. End-to-end registration/referral/admin journeys still need a live review. Dashboard-applied migrations are not yet reconciled into CLI migration history; do that before any `supabase db push`.
 
 To enable AI tailoring, open Supabase Dashboard → Edge Functions → Secrets and add `GEMINI_API_KEY` (the value from Google AI Studio). The app already reads this server-side secret; never place it in `.env.local`, a `VITE_` variable, or the browser. `GEMINI_MODEL` is explicitly set to `gemini-3.8-flash`; it is also the code default. A Groq key is optional fallback configuration. When provider keys are absent or calls fail, curated/template results remain available. A local-only variable-name template is at [supabase/functions/.env.example](supabase/functions/.env.example); copy it to `supabase/functions/.env` only for local Edge Function development and never commit populated secrets.
 

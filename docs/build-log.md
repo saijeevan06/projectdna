@@ -499,3 +499,26 @@ These migrations were submitted through the hosted SQL Editor because the Supaba
 ### Checkpoint
 
 - Build 16 checkpoint follows this documentation update.
+
+## Build 17 — AI configured and Vercel deployment ready
+
+**Status:** Production build passes; Supabase AI secret is configured; frontend deployment is ready for the user.
+
+### Delivered / confirmed
+
+- Confirmed `GEMINI_API_KEY` exists in Supabase Edge Function Secrets without retrieving or documenting its value.
+- Confirmed `demo-registration`, `project-admin`, `project-makeover` and `project-recommendations` are all ACTIVE with JWT verification enabled.
+- Confirmed `npm run build` passes (TypeScript build and Vite production bundle).
+- Confirmed local `.env.local` has non-empty Supabase URL, anon key and workshop URL entries; it remains ignored by Git and was not uploaded.
+- Pushed the project history to `https://github.com/saijeevan06/projectdna.git` on `main`, preserving the remote's initial commit. Local and remote point to the same commit.
+
+### Deployment handoff / remaining
+
+- The user can deploy from GitHub `main` to Vercel using `npm run build` and `dist`.
+- Vercel variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and the approved `VITE_WORKSHOP_URL`. Vercel environment variables must be set separately from local `.env.local`.
+- After the Vercel domain is available, update Supabase `ALLOWED_ORIGIN` and Auth Site URL/Redirect URLs, then verify live journeys.
+- Migration ledger reconciliation for `202610290001` and `202610290002` is unresolved. CLI repair stalled at login-role initialization; do not run `supabase db push` until versions are reconciled.
+
+### Checkpoint
+
+- `checkpoint: build 17 - AI configured and Vercel deployment ready`
