@@ -1,0 +1,4 @@
+project_id = "project-dna"
+
+[functions.project-makeover]
+verify_jwt = true

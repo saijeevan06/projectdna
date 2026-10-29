@@ -4,7 +4,7 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 ## Build 02 — shared profile intake and review
 
-**Status:** Complete  
+**Status:** Complete
 **Scope:** Carry path-specific context into five shared profile questions and let the user review/edit the answers.
 
 ### Delivered
@@ -37,7 +37,7 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 ## Build 03 — curated Path B recommendations
 
-**Status:** Complete  
+**Status:** Complete
 **Scope:** Use the reviewed Path B profile to return three useful project ideas without depending on an AI service.
 
 ### Delivered
@@ -67,9 +67,45 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 04: Path A bounded GitHub README retrieval with pasted description fallback and honest basis labeling. Keep provider orchestration server-side for the later Gemini/Groq/template fallback slice.
 
+## Build 04 — Path A context and template makeover
+
+**Status:** Complete
+**Scope:** Add a safe Path A path from repository/text context to a structured, honestly labeled makeover result.
+
+### Delivered
+
+- HTTPS `github.com/{owner}/{repo}` validation rejects arbitrary hosts, extra path segments, embedded credentials and unsupported schemes before requests.
+- Added a Supabase Edge Function that calls only GitHub's fixed README endpoint, does not follow redirects, uses a 7-second timeout, caps the upstream response at 40 KB and normalizes the text to 12,000 characters.
+- Edge Function validates the profile and request size, returns typed GitHub errors, and never clones, traverses or executes repository content.
+- Added a paste README/description fallback that preserves the profile and accepts up to 12,000 characters.
+- Both GitHub and pasted context can produce structured deterministic makeover guidance: summary/basis, proposed opportunities, four enhancement ideas, technology suggestions, difficulty/time, roadmap, skills and a potential resume bullet.
+- Results explicitly say that source code was not inspected and proposed features are not implemented. Template mode is visibly identified; AI provider integration remains future work.
+- Added `.env.example` and Supabase function configuration. GitHub retrieval requires deployment and `VITE_SUPABASE_URL` plus a public anon/publishable key; local paste mode works without these settings.
+- Updated README and implementation roadmap.
+
+### Verification
+
+- `npm run build` completed successfully (TypeScript check and Vite production bundle).
+- GitHub API README behavior and Supabase Edge Function deployment flow were checked against their official documentation: [GitHub REST README endpoint](https://docs.github.com/en/rest/repos/contents?apiversion=2022-11-28), [Supabase Edge Function deployment](https://supabase.com/docs/guides/functions/deploy).
+
+### Limits carried forward
+
+- A Supabase project is not configured in this workspace, so GitHub URL retrieval cannot run in the current local preview; the paste fallback and deterministic makeover do work locally.
+- The Supabase Edge Function source is not deployed or checked with a local Deno runtime in this workspace; configure a Supabase project and deploy it before demonstrating the GitHub URL path.
+- Gemini/Groq, database persistence, registration, referrals, analytics and dashboard are not implemented.
+- Function-level abuse rate limiting is still needed before public deployment. The Edge Function uses a strict GitHub host allowlist, request/context caps and timeout, but no per-user database-backed quota yet.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 04 - Path A context and template makeover`.
+
+### Next build
+
+- Build 05: add the Gemini → Groq → template provider chain behind the Edge Function, with schema validation and bounded provider timeouts. Keep all model credentials in Supabase secrets.
+
 ## Build 01 — app foundation and journey entry
 
-**Status:** Complete  
+**Status:** Complete
 **Scope:** Establish a runnable frontend and make both product paths visible from the landing page.
 
 ### Delivered

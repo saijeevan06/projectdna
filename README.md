@@ -11,8 +11,9 @@ Project DNA helps students and developers take a practical next step with a proj
 - Path A captures a GitHub URL or project description; Path B captures a target role.
 - Both paths collect five profile answers: branch, experience, preferred technology, interests and available time.
 - Path B returns three role/profile-matched catalogue projects with outcomes, technologies, difficulty, skills and a starter roadmap.
+- Path A accepts a public GitHub repository or pasted README/description, then displays bounded template-based makeover guidance.
 - Users can review/edit answers and see the deterministic catalogue output without AI providers. Data remains in browser memory only.
-- Path A currently stops at its project brief. GitHub retrieval and makeover recommendations are still planned. The workshop destination remains a placeholder until an approved URL is provided.
+- GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 
 ## Run locally
 
@@ -20,6 +21,16 @@ Project DNA helps students and developers take a practical next step with a proj
 npm install
 npm run dev
 ```
+
+To enable GitHub README retrieval, configure a Supabase project and deploy the Edge Function:
+
+```bash
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_ID
+npx supabase functions deploy project-makeover
+```
+
+Then put the project URL and JWT-style anon key in `.env.local` using [.env.example](.env.example) as a template. The browser anon key is public by design; never add a service-role key or AI provider key to frontend environment variables.
 
 Create a production bundle with `npm run build`.
 

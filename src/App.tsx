@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles } from 'lucide-react'
 import type { Profile } from './types'
 import { recommendProjects, type ProjectIdea } from './data/projects'
+import { buildMakeover, type Makeover } from './lib/makeover'
+import { fetchGitHubMakeover, hasProjectFunctionConfig, isValidGitHubRepoUrl, ProjectApiError } from './lib/projectApi'
 
 type Path = 'improve' | 'discover' | null
 
@@ -15,17 +17,28 @@ const interestOptions = ['Web development', 'AI', 'ML', 'Computer vision', 'NLP'
 
 function App() {
   const [path, setPath] = useState<Path>(null)
-  const [step, setStep] = useState<'context' | 'profile' | 'summary' | 'results'>('context')
+  const [step, setStep] = useState<'context' | 'profile' | 'summary' | 'fallback' | 'results'>('context')
   const [githubUrl, setGithubUrl] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
   const [targetRole, setTargetRole] = useState('')
   const [profile, setProfile] = useState<Profile>({ branch: '', experience: '', technology: '', interests: [], time: '' })
   const [error, setError] = useState('')
+  const [contextNotice, setContextNotice] = useState('')
+  const [makeover, setMakeover] = useState<Makeover | null>(null)
+  const [fallbackNotice, setFallbackNotice] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   function startPath(nextPath: Exclude<Path, null>) {
     setPath(nextPath)
     setStep('context')
     setError('')
+    setContextNotice('')
+    setMakeover(null)
+    setFallbackNotice('')
+    setGithubUrl('')
+    setProjectDescription('')
+    setTargetRole('')
+    setProfile({ branch: '', experience: '', technology: '', interests: [], time: '' })
   }
   function changeStep(nextStep: typeof step) {
     setStep(nextStep)
@@ -46,6 +59,15 @@ function App() {
       setError('Add a public GitHub link or describe your project to continue.')
       return
     }
+    if (path === 'improve' && githubUrl.trim() && !isValidGitHubRepoUrl(githubUrl.trim())) {
+      if (projectDescription.trim()) {
+        setGithubUrl('')
+        setContextNotice('That link is not a supported GitHub repository, so this result will use only the project text you pasted.')
+      } else {
+        setError('Use an HTTPS link in the format github.com/owner/repository, or paste your README/description below.')
+        return
+      }
+    }
     setError('')
     changeStep('profile')
   }
@@ -55,6 +77,38 @@ function App() {
       return
     }
     changeStep('summary')
+  }
+
+  async function runMakeover(usePasteOnly = false) {
+    setGenerating(true)
+    setError('')
+    setFallbackNotice(contextNotice)
+    try {
+      if (!usePasteOnly && githubUrl.trim()) {
+        if (!hasProjectFunctionConfig()) throw new ProjectApiError('SERVER_FUNCTION_NOT_CONFIGURED')
+        const result = await fetchGitHubMakeover(githubUrl.trim(), projectDescription, profile)
+        setMakeover(result)
+      } else {
+        const text = projectDescription.trim()
+        if (!text) { setStep('fallback'); setError('Paste a README or a short project description to continue.'); return }
+        const notice = contextNotice || (!hasProjectFunctionConfig() && githubUrl.trim()
+          ? 'GitHub import is not configured for this preview. This suggestion uses only the project text you pasted.'
+          : '')
+        setMakeover(buildMakeover(text, profile, 'Based on the README/project description you provided.'))
+        setFallbackNotice(notice)
+      }
+      setStep('results')
+    } catch (caught) {
+      const code = caught instanceof ProjectApiError ? caught.code : 'FUNCTION_UNAVAILABLE'
+      if (projectDescription.trim()) {
+        setMakeover(buildMakeover(projectDescription, profile, 'Based on the project text you provided.'))
+        setFallbackNotice(`${readableRepoError(code)} This template suggestion uses only the project text you pasted.`)
+        setStep('results')
+      } else {
+        setError(readableRepoError(code))
+        setStep('fallback')
+      }
+    } finally { setGenerating(false) }
   }
 
   return (
@@ -97,7 +151,7 @@ function App() {
         </section>
       ) : (
         <section className="intake-wrap">
-          <button className="back-button" onClick={() => step === 'context' ? (setPath(null), setError('')) : changeStep(step === 'summary' || step === 'results' ? 'profile' : 'context')}><ArrowLeft size={16} /> Back</button>
+          <button className="back-button" onClick={() => step === 'context' ? (setPath(null), setError('')) : changeStep(step === 'summary' ? 'profile' : step === 'results' ? (path === 'discover' ? 'profile' : 'summary') : step === 'fallback' ? 'summary' : 'context')}><ArrowLeft size={16} /> Back</button>
           <div className="intake-card">
             {step === 'context' && <>
               <div className="eyebrow"><span className="eyebrow-dot" /> FIRST, A LITTLE CONTEXT</div>
@@ -105,11 +159,12 @@ function App() {
               <p className="hero-description">{path === 'improve' ? 'Share a public GitHub link or tell us what you’ve been building. We’ll help you spot its next move.' : 'Tell us the role you’re aiming for. We’ll find project ideas that help you build toward it.'}</p>
               {path === 'improve' ? <>
                 <label className="field-label">PUBLIC GITHUB REPOSITORY <span>OPTIONAL</span><div className="input-wrap"><Github size={18} /><input type="url" value={githubUrl} onChange={(event) => setGithubUrl(event.target.value)} placeholder="https://github.com/you/your-project" /></div></label>
-                <label className="field-label">WHAT DOES IT DO?<textarea rows={3} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="A couple of sentences is plenty. You can paste a README later, too." /></label>
+                <label className="field-label">README OR PROJECT DESCRIPTION <span>PASTE FALLBACK</span><textarea rows={4} maxLength={12000} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Paste your README or describe the problem, users and what the project does." /></label>
+                <div className="character-count">{projectDescription.length.toLocaleString()} / 12,000 characters</div>
               </> : <label className="field-label">ROLE YOU’RE AIMING FOR<div className="input-wrap"><Sparkles size={18} /><input type="text" value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. AI engineer, product designer…" /></div></label>}
               {error && <p className="form-error" role="alert">{error}</p>}
               <button className="continue-button" onClick={continueFromContext}>Continue <ArrowRight size={17} /></button>
-              <p className="privacy-note">Your ideas stay yours. We only use what you share to shape your suggestions.</p>
+              <p className="privacy-note">GitHub reads use a secure server function. Pasted text can use the local template. We never clone or run repository code.</p>
             </>}
 
             {step === 'profile' && <>
@@ -130,7 +185,7 @@ function App() {
               <h1>Good place<br />to <span className="serif-accent">start.</span></h1>
               <p className="hero-description">Here’s the context we’ll use to shape your next project suggestion.</p>
               <div className="summary-card">
-                {path === 'discover' ? <div><small>TARGET ROLE</small><strong>{targetRole}</strong></div> : <div><small>EXISTING PROJECT</small><strong>{projectDescription.trim() || githubUrl}</strong></div>}
+                {path === 'discover' ? <div><small>TARGET ROLE</small><strong>{targetRole}</strong></div> : <><div><small>PROJECT CONTEXT</small><strong>{projectDescription.trim() || (githubUrl ? 'Public GitHub README' : 'Pasted project description')}</strong></div>{githubUrl && <div><small>GITHUB REPOSITORY</small><strong>{githubUrl}</strong></div>}</>}
                 <div><small>BRANCH · EXPERIENCE</small><strong>{profile.branch} · {profile.experience}</strong></div>
                 <div><small>PREFERRED TECHNOLOGY · TIME</small><strong>{profile.technology} · {profile.time}</strong></div>
                 <div><small>INTERESTS</small><strong>{profile.interests.join(', ')}</strong></div>
@@ -139,12 +194,25 @@ function App() {
                 <div className="prototype-note">Matched from our curated catalogue using your role, interests, technology and available time. No AI provider is needed.</div>
                 <button className="continue-button" onClick={() => changeStep('results')}>Get project recommendations <ArrowRight size={17} /></button>
               </> : <>
-                <div className="prototype-note">Your project brief is ready. Project makeover results are the next build; this prototype does not fetch or analyze repositories yet.</div>
-                <button className="continue-button" onClick={() => changeStep('profile')}>Edit my answers <ArrowRight size={17} /></button>
+                <div className="prototype-note">We’ll use only the public README or the text you provide. Suggestions are templates; source code is not inspected.</div>
+                <button className="continue-button" onClick={() => runMakeover()} disabled={generating}>{generating ? 'Preparing your makeover…' : 'Create my project makeover'} {!generating && <ArrowRight size={17} />}</button>
+                {error && <p className="form-error" role="alert">{error}</p>}
+                <button className="text-button" onClick={() => changeStep('profile')}><ArrowLeft size={14} /> Edit my answers</button>
               </>}
             </>}
 
+            {step === 'fallback' && path === 'improve' && <>
+              <div className="eyebrow"><span className="eyebrow-dot" /> README PASTE FALLBACK</div>
+              <h1>Let’s try it<br /><span className="serif-accent">another way.</span></h1>
+              <p className="hero-description">{error || 'We could not read that public README. Your profile is saved in this page; paste the README or describe the project to continue.'}</p>
+              <label className="field-label">README OR PROJECT DESCRIPTION<textarea rows={7} value={projectDescription} maxLength={12000} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Paste up to 12,000 characters of README text or describe your project…" /></label>
+              <div className="character-count">{projectDescription.length.toLocaleString()} / 12,000 characters</div>
+              <button className="continue-button" onClick={() => runMakeover(true)} disabled={generating}>{generating ? 'Preparing your makeover…' : 'Use this project text'} {!generating && <ArrowRight size={17} />}</button>
+              <p className="privacy-note">No repository is cloned, crawled or executed. The template uses only the text you paste.</p>
+            </>}
+
             {step === 'results' && path === 'discover' && <Recommendations role={targetRole} profile={profile} onEdit={() => changeStep('profile')} />}
+            {step === 'results' && path === 'improve' && makeover && <MakeoverResults makeover={makeover} notice={fallbackNotice} onEdit={() => changeStep('summary')} />}
           </div>
         </section>
       )}
@@ -179,6 +247,38 @@ function ProjectCard({ project, index }: { project: ProjectIdea; index: number }
     <div className="project-tags">{project.technologies.map((technology) => <span key={technology}>{technology}</span>)}</div>
     <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{project.roadmap.map((step) => <li key={step}>{step}</li>)}</ol></div></div>
   </article>
+}
+
+function readableRepoError(code: string) {
+  const messages: Record<string, string> = {
+    SERVER_FUNCTION_NOT_CONFIGURED: 'GitHub import is not configured in this preview. Paste your README or describe the project below.',
+    FUNCTION_UNAVAILABLE: 'We could not reach the secure GitHub reader. Paste your README or describe the project below.',
+    INVALID_GITHUB_URL: 'That link is not a supported public GitHub repository. Check the link or paste the README/description below.',
+    REPO_PRIVATE_OR_UNAVAILABLE: 'The repository may be private, missing, or unavailable. Paste the README or a project description to continue.',
+    README_UNAVAILABLE: 'We could not find a readable README. Paste the README or describe the project below.',
+    README_TOO_LARGE: 'That README is larger than this prototype can read. Paste a shorter excerpt or project description.',
+    GITHUB_RATE_LIMIT: 'GitHub temporarily limited this request. Paste your README or project description to continue.',
+    FETCH_TIMEOUT: 'Reading the README took too long. Paste the README or project description to continue.',
+  }
+  return messages[code] || 'We could not read that README. Paste it or describe the project to continue.'
+}
+
+function MakeoverResults({ makeover, notice, onEdit }: { makeover: Makeover; notice: string; onEdit: () => void }) {
+  return <>
+    <div className="eyebrow"><span className="eyebrow-dot" /> PROJECT MAKEOVER · TEMPLATE-BASED</div>
+    <h1>{makeover.title}<br /><span className="serif-accent">next moves.</span></h1>
+    <p className="hero-description makeover-summary">{makeover.summary}</p>
+    <div className="basis-note"><b>Basis:</b> {makeover.basis} {notice && <span>{notice}</span>}</div>
+    <section className="makeover-section"><h2>Potential opportunities</h2><ul>{makeover.opportunities.map((item) => <li key={item}>{item}</li>)}</ul></section>
+    <section className="makeover-section"><h2>Four ideas to explore</h2><div className="enhancement-grid">{makeover.enhancements.map((item) => <article key={item.title}><b>{item.title}</b><p>{item.detail}</p></article>)}</div></section>
+    <section className="makeover-meta"><div><small>TECHNOLOGY IDEAS</small><div className="project-tags">{makeover.technologies.map((item) => <span key={item}>{item}</span>)}</div></div><div><small>DIFFICULTY · ESTIMATED TIME</small><b>{makeover.difficulty} · {makeover.estimatedTime}</b></div></section>
+    <section className="makeover-section"><h2>A practical roadmap</h2><ol>{makeover.roadmap.map((item) => <li key={item}>{item}</li>)}</ol></section>
+    <section className="makeover-section"><h2>Skills you could practice</h2><div className="project-tags">{makeover.skills.map((item) => <span key={item}>{item}</span>)}</div></section>
+    <section className="resume-note"><small>POTENTIAL RESUME BULLET · EDIT AFTER YOU BUILD IT</small><p>{makeover.resumeBullet}</p></section>
+    <p className="makeover-disclaimer">{makeover.disclaimer}</p>
+    <div className="results-workshop"><div><b>Keep building with us</b><span>Join the free 60-minute AI project workshop.</span></div><a href="#workshop">Workshop info <ArrowUpRight size={14} /></a></div>
+    <button className="text-button" onClick={onEdit}><ArrowLeft size={14} /> Edit project context</button>
+  </>
 }
 
 export default App
