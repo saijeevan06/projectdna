@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 07 — workshop conversion and demo registration**
+**Build 08 — referrals and admin metrics**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -17,6 +17,8 @@ Project DNA helps students and developers take a practical next step with a proj
 - Result pages offer an optional official workshop handoff or a clearly labeled internal demo registration.
 - Demo registration normalizes email, prevents duplicates per campaign and records self-reported student eligibility separately from official registrations.
 - Basic funnel events capture landing, path start, results, CTA clicks, registration form starts and saved demo registrations with source/path/session identifiers.
+- Demo registrants can optionally share a referral link; valid referrals are counted in aggregate and never required.
+- Admins sign in through Supabase Auth and an active-user allowlist to view aggregate demo counts, self-reported eligibility, sources, daily activity, funnel and referral totals. No identities are returned.
 - Users can review/edit answers; profile and project context remain session-scoped and are not saved.
 - GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 
@@ -36,9 +38,20 @@ npx supabase db push
 npx supabase functions deploy project-makeover
 npx supabase functions deploy project-recommendations
 npx supabase functions deploy demo-registration
+npx supabase functions deploy project-admin
 ```
 
 Then put the project URL and JWT-style anon key in `.env.local` using [.env.example](.env.example) as a template. The browser anon key is public by design; never add a service-role key or AI provider key to frontend environment variables. Set `VITE_WORKSHOP_URL` only when an approved official workshop URL is available; without it, the result CTA opens the demo capture flow.
+
+Set `SUPABASE_SERVICE_ROLE_KEY` as a Supabase Edge Function secret, never as a `VITE_` variable. To allow dashboard access, create a Supabase Auth user, then add its Auth UUID through the SQL editor:
+
+```sql
+insert into public.admin_users (user_id, is_active)
+values ('AUTH_USER_UUID', true)
+on conflict (user_id) do update set is_active = true;
+```
+
+Apply migrations before deploying functions. The referral and admin paths require a live Supabase project and have not been exercised by the local preview.
 
 To enable AI tailoring, add `GEMINI_API_KEY` and/or `GROQ_API_KEY` in the Supabase project's Edge Function secrets. Both paths use Gemini first, then Groq, then deterministic catalogue/template results. Model IDs are configurable with `GEMINI_MODEL` and `GROQ_MODEL`; defaults are `gemini-3.8-flash` and `openai/gpt-oss-120b`. If provider secrets are absent, curated results remain available.
 

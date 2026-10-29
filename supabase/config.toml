@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.demo-registration]
 verify_jwt = true
+
+[functions.project-admin]
+verify_jwt = true

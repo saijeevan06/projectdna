@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles, Copy, LockKeyhole } from 'lucide-react'
 import type { Profile } from './types'
 import { projectCatalogue, recommendProjects, type ProjectIdea } from './data/projects'
 import { buildMakeover, type Makeover } from './lib/makeover'
 import { fetchGitHubMakeover, hasProjectFunctionConfig, isValidGitHubRepoUrl, ProjectApiError } from './lib/projectApi'
 import { fetchProjectRecommendations, type RecommendationResult } from './lib/recommendationApi'
-import { getWorkshopUrl, saveDemoRegistration, trackProjectEvent, type DemoRegistrationStatus, type RegistrationDraft, type RegistrationPath } from './lib/registrationApi'
+import { fetchReferralProgress, getWorkshopUrl, saveDemoRegistration, trackProjectEvent, type DemoRegistrationResult, type RegistrationDraft, type RegistrationPath } from './lib/registrationApi'
+import { adminLogin, fetchAdminMetrics, type AdminMetrics } from './lib/adminApi'
 
 type Path = 'improve' | 'discover' | null
 
@@ -31,9 +32,14 @@ function App() {
   const [generating, setGenerating] = useState(false)
   const [recommendationResult, setRecommendationResult] = useState<RecommendationResult | null>(null)
   const [registrationOpen, setRegistrationOpen] = useState(false)
-  const [registrationStatus, setRegistrationStatus] = useState<DemoRegistrationStatus | null>(null)
+  const [registrationResult, setRegistrationResult] = useState<DemoRegistrationResult | null>(null)
   const [registrationError, setRegistrationError] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [adminMetrics, setAdminMetrics] = useState<AdminMetrics | null>(null)
+  const [adminToken, setAdminToken] = useState('')
+  const [adminError, setAdminError] = useState('')
+  const [adminBusy, setAdminBusy] = useState(false)
 
   useEffect(() => { void trackProjectEvent('landing') }, [])
 
@@ -122,7 +128,7 @@ function App() {
       window.open(destination, '_blank', 'noopener,noreferrer')
       return
     }
-    setRegistrationStatus(null)
+    setRegistrationResult(null)
     setRegistrationError('')
     setRegistrationOpen(true)
     void trackProjectEvent('registration_form_start', pathValue)
@@ -131,14 +137,19 @@ function App() {
   async function handleDemoRegistration(draft: RegistrationDraft) {
     setRegistrationError('')
     try {
-      const status = await saveDemoRegistration(draft)
-      setRegistrationStatus(status)
+      const result = await saveDemoRegistration(draft)
+      setRegistrationResult(result)
     } catch (caught) {
       const code = caught instanceof Error ? caught.message : 'REGISTRATION_SAVE_FAILED'
       setRegistrationError(code === 'REGISTRATION_SERVICE_UNAVAILABLE'
         ? 'The demo registration service is not connected. Your details were not submitted.'
         : 'We could not save this demo registration. Your details were not counted; please try again later.')
     }
+  }
+
+  async function refreshReferralProgress(code: string) {
+    const referralCount = await fetchReferralProgress(code)
+    setRegistrationResult((current) => current ? { ...current, referralCount } : current)
   }
 
   const selectedProject = path === 'improve'
@@ -189,6 +200,7 @@ function App() {
         <div className="topbar-right">
           <span className="nav-note">A better next step starts here</span>
           <a className="workshop-link" href="#workshop">Free AI workshop <ArrowUpRight size={15} /></a>
+          <button className="text-button" onClick={() => { setAdminOpen(true); setAdminError('') }}><LockKeyhole size={14} /> Admin</button>
         </div>
       </nav>
 
@@ -291,13 +303,20 @@ function App() {
       </footer>
       {registrationOpen && <RegistrationDialog
         profileBranch={profile.branch}
-        registrationStatus={registrationStatus}
+        registrationResult={registrationResult}
         registrationError={registrationError}
         selectedProject={selectedProject}
         path={path === 'improve' ? 'improve' : path === 'discover' ? 'discover' : 'unknown'}
         onClose={() => setRegistrationOpen(false)}
         onSubmit={handleDemoRegistration}
+        onReferralProgress={refreshReferralProgress}
       />}
+      {adminOpen && <AdminDialog metrics={adminMetrics} error={adminError} busy={adminBusy} onClose={() => { setAdminOpen(false); setAdminToken(''); setAdminMetrics(null) }} onLogin={async (email, password) => {
+        setAdminBusy(true); setAdminError('')
+        try { const token = await adminLogin(email, password); const metrics = await fetchAdminMetrics(token); setAdminToken(token); setAdminMetrics(metrics) }
+        catch { setAdminError('Sign-in or dashboard access failed. Check your account and admin access, then try again.') }
+        finally { setAdminBusy(false) }
+      }} onRefresh={async () => { if (!adminToken) return; setAdminBusy(true); setAdminError(''); try { setAdminMetrics(await fetchAdminMetrics(adminToken)) } catch { setAdminError('Metrics could not be refreshed. Please sign in again.') } finally { setAdminBusy(false) } }} />}
     </main>
   )
 }
@@ -369,14 +388,15 @@ function ResultsWorkshop({ onClick }: { onClick: () => void }) {
   return <div className="results-workshop"><div><b>Keep building with us</b><span>{official ? 'Continue to the configured workshop registration page.' : 'Open the clearly labeled demo registration flow.'}</span></div><button onClick={onClick}>{official ? 'Open registration' : 'Register (demo)'} <ArrowUpRight size={14} /></button></div>
 }
 
-function RegistrationDialog({ profileBranch, registrationStatus, registrationError, selectedProject, path, onClose, onSubmit }: {
+function RegistrationDialog({ profileBranch, registrationResult, registrationError, selectedProject, path, onClose, onSubmit, onReferralProgress }: {
   profileBranch: string
-  registrationStatus: DemoRegistrationStatus | null
+  registrationResult: DemoRegistrationResult | null
   registrationError: string
   selectedProject: string
   path: RegistrationPath
   onClose: () => void
   onSubmit: (draft: RegistrationDraft) => Promise<void>
+  onReferralProgress: (code: string) => Promise<void>
 }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -401,6 +421,7 @@ function RegistrationDialog({ profileBranch, registrationStatus, registrationErr
       selectedProject,
       consent,
       path,
+      referralCode: null,
     })
     setBusy(false)
   }
@@ -411,7 +432,7 @@ function RegistrationDialog({ profileBranch, registrationStatus, registrationErr
       <div className="eyebrow"><span className="eyebrow-dot" /> WORKSHOP NEXT STEP</div>
       <h2 id="registration-title">Demo <span className="serif-accent">registration</span></h2>
       <p className="dialog-intro">This captures an internal demo record only. It is not an official NxtWave registration.</p>
-      {!backendReady ? <div className="prototype-note">Demo registration storage isn’t connected in this preview. No personal details were requested or submitted. Configure Supabase to enable the form, or add the approved workshop URL to continue on the official page.</div> : registrationStatus === 'saved' ? <div className="registration-success"><b>Demo registration saved.</b><span>This prototype record is separate from official workshop signups. Student eligibility is self-reported, not verified.</span></div> : registrationStatus === 'duplicate' ? <div className="registration-success"><b>This email already has a demo registration.</b><span>It wasn’t counted a second time. This prototype record is not an official signup.</span></div> : <form className="registration-form" onSubmit={submit}>
+      {!backendReady ? <div className="prototype-note">Demo registration storage isn’t connected in this preview. No personal details were requested or submitted. Configure Supabase to enable the form, or add the approved workshop URL to continue on the official page.</div> : registrationResult ? <div className="registration-success"><b>{registrationResult.status === 'saved' ? 'Demo registration saved.' : 'This email already has a demo registration.'}</b><span>{registrationResult.status === 'saved' ? 'This prototype record is separate from official workshop signups. Student eligibility is self-reported, not verified.' : 'It wasn’t counted a second time. This prototype record is not an official signup.'}</span><div className="referral-box"><small>YOUR OPTIONAL INVITE LINK</small><code>{`${window.location.origin}/?ref=${registrationResult.referralCode}`}</code><button type="button" className="text-button" onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}/?ref=${registrationResult.referralCode}`) }}><Copy size={14} /> Copy link</button><a href={`https://wa.me/?text=${encodeURIComponent(`I’m exploring a project idea with Project DNA. Join me: ${window.location.origin}/?ref=${registrationResult.referralCode}`)}`} target="_blank" rel="noreferrer">Share on WhatsApp <ArrowUpRight size={13} /></a><div><b>{registrationResult.referralCount} / 3</b><span> optional invitations registered</span></div><button type="button" className="text-button" onClick={() => void onReferralProgress(registrationResult.referralCode)}>Check progress</button>{registrationResult.referralAttributed && <span>Your registration was attributed to an invite.</span>}</div></div> : <form className="registration-form" onSubmit={submit}>
         <label className="field-label">YOUR NAME<input required minLength={2} maxLength={120} value={fullName} onChange={(event) => setFullName(event.target.value)} autoComplete="name" /></label>
         <label className="field-label">EMAIL ADDRESS<input required type="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
         <label className="field-label">COLLEGE<input required minLength={2} maxLength={180} value={college} onChange={(event) => setCollege(event.target.value)} autoComplete="organization" /></label>
@@ -429,5 +450,11 @@ function RegistrationDialog({ profileBranch, registrationStatus, registrationErr
     </section>
   </div>
 }
+
+function AdminDialog({ metrics, error, busy, onClose, onLogin, onRefresh }: { metrics: AdminMetrics | null; error: string; busy: boolean; onClose: () => void; onLogin: (email: string, password: string) => Promise<void>; onRefresh: () => Promise<void> }) {
+  const [email, setEmail] = useState(''); const [password, setPassword] = useState('')
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="registration-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title"><button className="dialog-close" onClick={onClose} type="button">Close</button><div className="eyebrow"><span className="eyebrow-dot" /> PRIVATE CAMPAIGN VIEW</div><h2 id="admin-title">Admin <span className="serif-accent">dashboard</span></h2>{!metrics ? <form className="registration-form" onSubmit={(event) => { event.preventDefault(); void onLogin(email, password) }}><label className="field-label">ADMIN EMAIL<input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="field-label">PASSWORD<input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label><p className="privacy-note">Only an active admin account can read aggregate demo metrics. No registration identities are shown.</p><button className="continue-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button></form> : <><div className="admin-metric-grid"><Metric label="Demo registrations" value={metrics.registrations.total} /><Metric label="Eligible · self-reported" value={metrics.registrations.eligibleSelfReported} /><Metric label="Other demo records" value={metrics.registrations.otherDemo} /><Metric label="Referral registrations" value={metrics.referralRegistrations} /></div><h3>Funnel</h3><div className="admin-list">{Object.entries(metrics.funnel).map(([label, value]) => <div key={label}><span>{label.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</span><b>{value}</b></div>)}</div><h3>Sources</h3><div className="admin-list">{metrics.sources.map((row) => <div key={row.source}><span>{row.source}</span><b>{row.count}</b></div>)}</div><h3>Last 14 days</h3><div className="admin-list">{metrics.daily.map((row) => <div key={row.date}><span>{row.date}</span><b>{row.count}</b></div>)}</div><button className="text-button" onClick={() => void onRefresh()} disabled={busy}>Refresh metrics</button></>}{error && <p className="form-error" role="alert">{error}</p>}</section></div>
+}
+function Metric({ label, value }: { label: string; value: number }) { return <article className="admin-metric"><small>{label}</small><b>{value}</b></article> }
 
 export default App

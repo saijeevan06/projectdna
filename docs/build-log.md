@@ -172,6 +172,38 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 07: workshop conversion flow with honest official handoff vs clearly labeled demo capture. Continue with unique registration handling, optional referrals and the basic admin funnel.
 
+## Build 08 — referrals and admin metrics
+
+**Status:** Implemented; live Supabase setup pending.
+**Scope:** Add optional referral attribution and aggregate progress, plus an allowlisted admin dashboard without exposing registration identities.
+
+### Delivered
+
+- Added migration to issue unique referral codes to existing and new demo registrations.
+- Referral URLs are captured from `?ref=` and attributed only to a new unique registration. Invalid codes and self-referrals do not block signup; duplicates do not count again.
+- Confirmation offers copy/WhatsApp sharing and an optional aggregate progress check. The invite is never required.
+- Added an Auth-protected `project-admin` Edge Function. It validates the user token, then checks the active `admin_users` allowlist before returning aggregate metrics.
+- Added admin UI for demo totals, self-reported eligibility/other totals, source counts, 14-day daily registrations, funnel events and referral totals. No PII is returned by the dashboard RPC.
+- Browser access token stays in app memory. Service-role and model keys stay in Edge Function secrets. README documents deployment and admin allowlisting.
+
+### Verification
+
+- `npm run build` completed successfully (TypeScript check and Vite production bundle).
+- Migration and Edge Function paths were reviewed but not applied/executed against a live Supabase project.
+
+### Limits carried forward
+
+- Supabase credentials are not configured, so remote auth/database paths are unverified.
+- Public deployment still needs abuse rate limits and a documented retention/deletion process.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 08 - referrals and admin metrics`.
+
+### Next build
+
+- Build 09: connect and validate Supabase, inspect mobile behavior, add abuse controls and retention handling, and prepare deployment/demo operations.
+
 ## Build 07 — workshop conversion and demo registration
 
 **Status:** Complete

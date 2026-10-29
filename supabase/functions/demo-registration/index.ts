@@ -77,6 +77,15 @@ Deno.serve(async (request) => {
   const source = validSource(body.source)
   const path = body.path === 'improve' || body.path === 'discover' || body.path === 'unknown' ? body.path : 'unknown'
 
+  if (typeof body.referralProgressCode === 'string') {
+    const code = body.referralProgressCode.trim().toUpperCase()
+    if (!/^[A-Z0-9]{12}$/.test(code)) return json({ referralCount: 0 })
+    try {
+      const count = await databaseRpc('get_referral_progress', { p_code: code, p_campaign_id: campaignId })
+      return json({ referralCount: typeof count === 'number' ? count : 0 })
+    } catch { return json({ error: 'REFERRAL_PROGRESS_UNAVAILABLE' }, 503) }
+  }
+
   if (typeof body.eventName === 'string') {
     if (!events.has(body.eventName)) return json({ error: 'INVALID_EVENT' }, 422)
     try {
@@ -93,6 +102,7 @@ Deno.serve(async (request) => {
   const branch = student && typeof body.branch === 'string' && branches.has(body.branch) ? body.branch : null
   const finalYear = student && typeof body.finalYearEngineering === 'boolean' ? body.finalYearEngineering : null
   const selectedProject = typeof body.selectedProject === 'string' ? body.selectedProject.trim() : ''
+  const referralCode = typeof body.referralCode === 'string' && /^[A-Za-z0-9]{12}$/.test(body.referralCode.trim()) ? body.referralCode.trim().toUpperCase() : null
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (fullName.length < 2 || fullName.length > 120 || !emailPattern.test(email) || email.length > 254
     || college.length < 2 || college.length > 180 || (!student && userType !== 'developer')
@@ -113,8 +123,16 @@ Deno.serve(async (request) => {
       p_path: path,
       p_session_id: body.sessionId,
       p_consent: true,
+      p_referral_code: referralCode,
     })
-    if (status !== 'saved' && status !== 'duplicate') return json({ error: 'REGISTRATION_SAVE_FAILED' }, 503)
-    return json({ status, officialRegistration: false, mode: 'demo' })
+    if (!status || typeof status !== 'object' || !['saved', 'duplicate'].includes(String(status.status))) return json({ error: 'REGISTRATION_SAVE_FAILED' }, 503)
+    return json({
+      status: status.status,
+      officialRegistration: false,
+      mode: 'demo',
+      referralCode: typeof status.referralCode === 'string' ? status.referralCode : '',
+      referralCount: Number(status.referralCount) || 0,
+      referralAttributed: status.referralAttributed === true,
+    })
   } catch { return json({ error: 'REGISTRATION_SAVE_FAILED' }, 503) }
 })
