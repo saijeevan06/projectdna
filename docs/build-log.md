@@ -2,6 +2,32 @@
 
 Each build checkpoint records shipped behavior, known limits, documentation changes and the next planned slice. The Git commit for each checkpoint is named `checkpoint: build NN - ...`.
 
+## Build 13 setup checkpoint — Supabase local redirect URLs
+
+**Status:** Dashboard URL configuration confirmed; remaining hosted setup is pending.
+
+### Confirmed
+
+- Supabase Auth Site URL is `http://localhost:5173`.
+- Supabase Auth Redirect URLs includes `http://localhost:5173/**`.
+- `.env.local` has non-empty `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` entries and is ignored by Git; secret values were not included in documentation.
+- The project’s previous invite link is expired and requires a replacement before account setup can finish.
+
+### Still pending
+
+- Resend the Auth invitation, apply the project migrations, deploy the Edge Functions, and verify the live app against Supabase.
+- Allowlist the invited Auth user after migrations create the admin table.
+- Add production and preview Vercel URLs to Supabase Auth after a deployment domain is available.
+- The Supabase/Vercel connectors and CLIs are not available in this Codex execution context, so hosted changes beyond the dashboard URL verification are not yet applied.
+
+### Checkpoint
+
+- Git commit records this documentation/setup checkpoint.
+
+### Next build
+
+- Build 14: complete Supabase Auth invitation, schema, function deployment and end-to-end verification; preserve this order so the admin allowlist is added only after its table exists.
+
 ## Build 02 — shared profile intake and review
 
 **Status:** Complete
