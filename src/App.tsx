@@ -11,6 +11,7 @@ import { clearAuthRedirectHash, readInviteRedirect, type InviteRedirect } from '
 import { InviteAcceptance } from './InviteAcceptance'
 
 type Path = 'improve' | 'discover' | null
+type Audience = 'student' | 'developer'
 
 const profileQuestions = [
   { key: 'branch', title: 'What are you studying?', options: ['CSE', 'IT', 'AI/ML', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Other'] },
@@ -27,7 +28,9 @@ const roleSuggestions = [
 ]
 
 function App() {
-  const [path, setPath] = useState<Path>(() => window.location.hash === '#improve' ? 'improve' : window.location.hash === '#discover' ? 'discover' : null)
+  const [path, setPath] = useState<Path>(null)
+  const [audience, setAudience] = useState<Audience | null>(null)
+  const [audienceError, setAudienceError] = useState('')
   const [step, setStep] = useState<'context' | 'profile' | 'summary' | 'fallback' | 'results'>('context')
   const [githubUrl, setGithubUrl] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
@@ -52,13 +55,21 @@ function App() {
   const [inviteRedirect, setInviteRedirect] = useState<InviteRedirect>(() => readInviteRedirect(window.location.hash))
 
   useEffect(() => {
+    if (!inviteRedirect) void trackProjectEvent('landing')
+  }, [inviteRedirect])
+
+  useEffect(() => {
     if (inviteRedirect) {
       clearAuthRedirectHash()
       return
     }
-    void trackProjectEvent('landing')
     const syncRoute = () => {
       const nextPath = window.location.hash === '#improve' ? 'improve' : window.location.hash === '#discover' ? 'discover' : null
+      if (nextPath && !audience) {
+        setAudienceError('Choose Student or Developer first so we can shape the right next step.')
+        setPath(null)
+        return
+      }
       setPath(nextPath)
       if (nextPath) setStep('context')
     }
@@ -75,7 +86,7 @@ function App() {
       window.removeEventListener('hashchange', syncRoute)
       window.removeEventListener('scroll', updateProgress)
     }
-  }, [])
+  }, [audience, inviteRedirect])
 
   useEffect(() => {
     if (path) return
@@ -97,6 +108,11 @@ function App() {
   }, [path])
 
   function startPath(nextPath: Exclude<Path, null>) {
+    if (!audience) {
+      setAudienceError('Choose Student or Developer first so we can shape the right next step.')
+      document.getElementById('audience-type')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     window.history.pushState({ projectDnaPath: nextPath }, '', `#${nextPath}`)
     setPath(nextPath)
     setStep('context')
@@ -282,6 +298,7 @@ function App() {
             <div className="eyebrow"><span className="eyebrow-dot" /> YOUR NEXT PROJECT, FIGURED OUT</div>
             <h1>Turn what you know<br />into what’s <span className="serif-accent">next.</span></h1>
             <p className="hero-description">Get a practical project direction for the role you want, or find the next version of something you’ve already built.</p>
+            <fieldset className="audience-select" id="audience-type"><legend>FIRST, TELL US ABOUT YOU</legend><div><button type="button" className={audience === 'student' ? 'selected' : ''} aria-pressed={audience === 'student'} onClick={() => { setAudience('student'); setAudienceError('') }}>I’m a student</button><button type="button" className={audience === 'developer' ? 'selected' : ''} aria-pressed={audience === 'developer'} onClick={() => { setAudience('developer'); setAudienceError('') }}>I’m a developer</button></div>{audienceError && <p className="form-error" role="alert">{audienceError}</p>}</fieldset>
             <div className="hero-actions"><button className="continue-button" onClick={() => startPath('discover')}>Find my next project <ArrowRight size={17} /></button><button className="hero-secondary" onClick={() => startPath('improve')}><Github size={16} /> Improve a project</button></div>
             <div className="hero-proof"><span className="proof-sparkle">✳</span><span>Useful ideas first. Workshop when you’re ready.</span></div>
           </div>
@@ -380,6 +397,7 @@ function App() {
       </footer>
       {registrationOpen && <RegistrationDialog
         profileBranch={profile.branch}
+        initialUserType={audience || 'student'}
         registrationResult={registrationResult}
         registrationError={registrationError}
         selectedProject={selectedProject}
@@ -445,6 +463,13 @@ function Recommendations({ role, profile, tailoring, selectedProjectId, onSelect
 }
 
 function ProjectCard({ project, tailoring, selected, onSelect, index }: { project: ProjectIdea; tailoring?: { tailoredSummary?: string; roadmap: string[] }; selected: boolean; onSelect: () => void; index: number }) {
+  const [copyStatus, setCopyStatus] = useState('')
+  const roadmap = tailoring?.roadmap || project.roadmap
+  async function copyProject() {
+    const text = `${project.title}\n\n${tailoring?.tailoredSummary || project.problem}\n\nOutcome: ${project.outcome}\nTechnologies: ${project.technologies.join(', ')}\nTime: ${project.time}\nSkills: ${project.skills.join(', ')}\nRoadmap:\n${roadmap.map((step, stepIndex) => `${stepIndex + 1}. ${step}`).join('\n')}\n\nProject idea from Project DNA.`
+    try { await navigator.clipboard.writeText(text); setCopyStatus('Copied project brief') }
+    catch { setCopyStatus('Clipboard unavailable') }
+  }
   return <article className={`recommendation-card ${selected ? 'selected-card' : ''}`}>
     <div className="recommendation-topline"><span>PROJECT 0{index}</span><span>{project.difficulty} · {project.time}</span></div>
     <h2>{project.title}</h2>
@@ -452,8 +477,8 @@ function ProjectCard({ project, tailoring, selected, onSelect, index }: { projec
     {tailoring?.tailoredSummary && <p className="tailored-summary">{tailoring.tailoredSummary}</p>}
     <div className="project-outcome"><small>WHAT YOU’LL MAKE</small><p>{project.outcome}</p></div>
     <div className="project-tags">{project.technologies.map((technology) => <span key={technology}>{technology}</span>)}</div>
-    <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{(tailoring?.roadmap || project.roadmap).map((step) => <li key={step}>{step}</li>)}</ol></div></div>
-    <button className={`select-project ${selected ? 'selected' : ''}`} onClick={onSelect}>{selected ? 'Selected for the workshop' : 'Choose this project'}{selected && <Check size={14} />}</button>
+    <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{roadmap.map((step) => <li key={step}>{step}</li>)}</ol></div></div>
+    <div className="project-card-actions"><button className={`select-project ${selected ? 'selected' : ''}`} onClick={onSelect}>{selected ? 'Selected for the workshop' : 'Choose this project'}{selected && <Check size={14} />}</button><button type="button" className="text-button" onClick={() => void copyProject()} aria-live="polite"><Copy size={14} /> {copyStatus || 'Copy project brief'}</button></div>
   </article>
 }
 
@@ -472,11 +497,18 @@ function readableRepoError(code: string) {
 }
 
 function MakeoverResults({ makeover, notice, onWorkshop, onEdit }: { makeover: Makeover; notice: string; onWorkshop: () => void; onEdit: () => void }) {
+  const [copyStatus, setCopyStatus] = useState('')
+  async function copyMakeover() {
+    const text = `${makeover.title}\n\n${makeover.summary}\n\nPotential opportunities:\n${makeover.opportunities.map((item) => `• ${item}`).join('\n')}\n\nIdeas to explore:\n${makeover.enhancements.map((item) => `• ${item.title}: ${item.detail}`).join('\n')}\n\nTechnology ideas: ${makeover.technologies.join(', ')}\nDifficulty and time: ${makeover.difficulty} · ${makeover.estimatedTime}\n\nRoadmap:\n${makeover.roadmap.map((item, index) => `${index + 1}. ${item}`).join('\n')}\n\nSkills: ${makeover.skills.join(', ')}\n\n${makeover.disclaimer}\n\nProject guidance from Project DNA.`
+    try { await navigator.clipboard.writeText(text); setCopyStatus('Copied makeover brief') }
+    catch { setCopyStatus('Clipboard unavailable') }
+  }
   return <>
     <div className="eyebrow"><span className="eyebrow-dot" /> PROJECT MAKEOVER · {makeover.provider.toUpperCase()}</div>
     <h1>{makeover.title}<br /><span className="serif-accent">next moves.</span></h1>
     <p className="hero-description makeover-summary">{makeover.summary}</p>
     <div className="basis-note"><b>Basis:</b> {makeover.basis}<span>{makeover.providerNote}</span>{notice && <span>{notice}</span>}</div>
+    <button type="button" className="text-button result-copy-button" onClick={() => void copyMakeover()} aria-live="polite"><Copy size={14} /> {copyStatus || 'Copy makeover brief'}</button>
     <section className="makeover-section"><h2>Potential opportunities</h2><ul>{makeover.opportunities.map((item) => <li key={item}>{item}</li>)}</ul></section>
     <section className="makeover-section"><h2>Four ideas to explore</h2><div className="enhancement-grid">{makeover.enhancements.map((item) => <article key={item.title}><b>{item.title}</b><p>{item.detail}</p></article>)}</div></section>
     <section className="makeover-meta"><div><small>TECHNOLOGY IDEAS</small><div className="project-tags">{makeover.technologies.map((item) => <span key={item}>{item}</span>)}</div></div><div><small>DIFFICULTY · ESTIMATED TIME</small><b>{makeover.difficulty} · {makeover.estimatedTime}</b></div></section>
@@ -494,8 +526,9 @@ function ResultsWorkshop({ onClick }: { onClick: () => void }) {
   return <div className="results-workshop"><div><b>Keep building with us</b><span>{official ? 'Continue to the configured workshop registration page.' : 'Open the clearly labeled demo registration flow.'}</span></div><button onClick={onClick}>{official ? 'Open registration' : 'Register (demo)'} <ArrowUpRight size={14} /></button></div>
 }
 
-function RegistrationDialog({ profileBranch, registrationResult, registrationError, selectedProject, path, onClose, onSubmit, onReferralProgress }: {
+function RegistrationDialog({ profileBranch, initialUserType, registrationResult, registrationError, selectedProject, path, onClose, onSubmit, onReferralProgress }: {
   profileBranch: string
+  initialUserType: Audience
   registrationResult: DemoRegistrationResult | null
   registrationError: string
   selectedProject: string
@@ -507,7 +540,7 @@ function RegistrationDialog({ profileBranch, registrationResult, registrationErr
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [college, setCollege] = useState('')
-  const [userType, setUserType] = useState<'student' | 'developer'>('student')
+  const [userType, setUserType] = useState<Audience>(initialUserType)
   const [branch, setBranch] = useState(profileBranch || '')
   const [finalYear, setFinalYear] = useState('')
   const [consent, setConsent] = useState(false)
@@ -559,7 +592,9 @@ function RegistrationDialog({ profileBranch, registrationResult, registrationErr
 
 function AdminDialog({ metrics, error, busy, onClose, onLogin, onRefresh }: { metrics: AdminMetrics | null; error: string; busy: boolean; onClose: () => void; onLogin: (email: string, password: string) => Promise<void>; onRefresh: () => Promise<void> }) {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('')
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="registration-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title"><button className="dialog-close" onClick={onClose} type="button">Close</button><div className="eyebrow"><span className="eyebrow-dot" /> PRIVATE CAMPAIGN VIEW</div><h2 id="admin-title">Admin <span className="serif-accent">dashboard</span></h2>{!metrics ? <form className="registration-form" onSubmit={(event) => { event.preventDefault(); void onLogin(email, password) }}><label className="field-label">ADMIN EMAIL<input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="field-label">PASSWORD<input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label><p className="privacy-note">Only an active admin account can read aggregate demo metrics. No registration identities are shown.</p><button className="continue-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button></form> : <><div className="admin-metric-grid"><Metric label="Demo registrations" value={metrics.registrations.total} /><Metric label="Eligible · self-reported" value={metrics.registrations.eligibleSelfReported} /><Metric label="Other demo records" value={metrics.registrations.otherDemo} /><Metric label="Referral registrations" value={metrics.referralRegistrations} /></div><h3>Funnel</h3><div className="admin-list">{Object.entries(metrics.funnel).map(([label, value]) => <div key={label}><span>{label.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</span><b>{value}</b></div>)}</div><h3>Sources</h3><div className="admin-list">{metrics.sources.map((row) => <div key={row.source}><span>{row.source}</span><b>{row.count}</b></div>)}</div><h3>Last 14 days</h3><div className="admin-list">{metrics.daily.map((row) => <div key={row.date}><span>{row.date}</span><b>{row.count}</b></div>)}</div><button className="text-button" onClick={() => void onRefresh()} disabled={busy}>Refresh metrics</button></>}{error && <p className="form-error" role="alert">{error}</p>}</section></div>
+  const eligible = metrics?.registrations.eligibleSelfReported || 0
+  const goalProgress = Math.min(100, Math.round(eligible / 500 * 100))
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="registration-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title"><button className="dialog-close" onClick={onClose} type="button">Close</button><div className="eyebrow"><span className="eyebrow-dot" /> PRIVATE CAMPAIGN VIEW</div><h2 id="admin-title">Admin <span className="serif-accent">dashboard</span></h2>{!metrics ? <form className="registration-form" onSubmit={(event) => { event.preventDefault(); void onLogin(email, password) }}><label className="field-label">ADMIN EMAIL<input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="field-label">PASSWORD<input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label><p className="privacy-note">Only an active admin account can read aggregate demo metrics. No registration identities are shown.</p><button className="continue-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button></form> : <><div className="admin-metric-grid"><Metric label="Demo registrations" value={metrics.registrations.total} /><Metric label="Eligible · self-reported" value={eligible} /><Metric label="Other demo records" value={metrics.registrations.otherDemo} /><Metric label="Referral registrations" value={metrics.referralRegistrations} /></div><section className="admin-goal" aria-label="500 eligible student registration goal"><div><span>Eligible students · self-reported</span><b>{eligible.toLocaleString()} / 500</b></div><div className="admin-goal-track" role="progressbar" aria-label="Progress toward 500 eligible student registrations" aria-valuemin={0} aria-valuemax={500} aria-valuenow={Math.min(500, eligible)}><span style={{ width: `${goalProgress}%` }} /></div><small>{goalProgress}% of campaign target · Demo counts only; eligibility is self-reported.</small></section><h3>Funnel</h3><div className="admin-list">{Object.entries(metrics.funnel).map(([label, value]) => <div key={label}><span>{label.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</span><b>{value}</b></div>)}</div><h3>Sources</h3><div className="admin-list">{metrics.sources.map((row) => <div key={row.source}><span>{row.source}</span><b>{row.count}</b></div>)}</div><h3>Last 14 days</h3><div className="admin-list">{metrics.daily.map((row) => <div key={row.date}><span>{row.date}</span><b>{row.count}</b></div>)}</div><button className="text-button" onClick={() => void onRefresh()} disabled={busy}>Refresh metrics</button></>}{error && <p className="form-error" role="alert">{error}</p>}</section></div>
 }
 function Metric({ label, value }: { label: string; value: number }) { return <article className="admin-metric"><small>{label}</small><b>{value}</b></article> }
 

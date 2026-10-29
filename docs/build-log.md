@@ -441,10 +441,61 @@ These migrations were submitted through the hosted SQL Editor because the Supaba
 
 - Deploy the four Edge Functions, configure their secrets and allowed origin, then verify registration, referral and admin flows against the live project.
 
-### Build 15 deployment preparation
+## Build 15 — Supabase Edge Functions deployment and Gemini configuration
 
-- Confirmed all four local function entry points and their shared modules are present; the current CLI supports API-based deployment without Docker.
-- Deployment could not start because the Supabase CLI has no access token (`projects list` returned `AccessTokenRequiredError`). No credential was requested or exposed in chat.
-- Before deploying browser-facing functions, configure `ALLOWED_ORIGIN` to the exact Vercel production origin. Provider keys `GEMINI_API_KEY` and `GROQ_API_KEY` are optional; without them the code returns its catalogue/template fallback.
-- Next operator action: authenticate the local CLI using `npx supabase login` and a scoped token entered in the local terminal. Then deploy the four named functions with project ref `alaobrluwmzwtxesgdwl` and `--use-api`; preserve the configured JWT verification.
-- No hosted function deployment has been claimed or attempted without authentication.
+**Status:** Deployed and verified active in Supabase project `alaobrluwmzwtxesgdwl`.
+
+### Delivered
+
+- Deployed `demo-registration`, `project-admin`, `project-makeover` and `project-recommendations` with the current Supabase CLI using `--use-api`.
+- Supabase reports all four functions `ACTIVE` with JWT verification enabled.
+- Set the Edge Function `ALLOWED_ORIGIN` secret to `http://localhost:5173`, the known local app origin.
+- Set `GEMINI_MODEL=gemini-3.8-flash` server-side and documented `GEMINI_API_KEY` in the Supabase Edge Function Secrets configuration path. The user will supply the API key; it has not been added yet.
+- Added `supabase/functions/.env.example` for local function development. It contains variable names and safe defaults only, not credentials.
+- Updated README and roadmap with deployment, secret-handling and remaining-deliverables guidance.
+
+### Verification
+
+- `supabase functions list` confirms all four functions are active, version 1, with `verify_jwt=true`.
+- `supabase secrets list` confirms the project has `ALLOWED_ORIGIN`, `GEMINI_MODEL` and Supabase-managed runtime keys; it does not reveal their values.
+- Google’s current Gemini API docs list `gemini-3.8-flash` as a stable model; Gemini supports structured outputs used by this app.
+
+### Remaining
+
+- Add `GEMINI_API_KEY` in Supabase Dashboard → Edge Functions → Secrets. Until then, results use deterministic/catalogue fallbacks.
+- Change `ALLOWED_ORIGIN` from localhost to the exact Vercel production origin before testing from production; add production and preview origins to Supabase Auth redirects.
+- Reconcile migration history versions `202610290001` and `202610290002` before a future `db push`. A CLI repair attempt stalled while initializing the remote login role, so no repair is claimed.
+- Admin allowlist authorization, end-to-end live journeys, P0 failure/mobile checks, abuse controls, data retention, workshop URL and submission assets remain.
+
+### Checkpoint
+
+- Checkpoint commit created after the docs and configuration template updates.
+
+## Build 16 — close MVP experience gaps and prepare Vercel handoff
+
+**Status:** Complete; production bundle verified.
+
+### Delivered
+
+- Added a Student/Developer choice to the landing flow before a visitor can enter either project path; registration uses the selected type as its default and can still be corrected.
+- Added copyable text briefs to both recommendation cards and project makeover results.
+- Added an accessible 500-eligible-student progress bar to the admin dashboard. It explicitly identifies the count as self-reported demo data.
+- Added a local Edge Function env template with variable names only and documented secure Gemini key placement.
+- Documented Vercel Vite build settings, the public frontend variables, and the post-deploy Supabase origin/redirect steps.
+
+### Verification
+
+- `npm run build` passed (TypeScript project build and Vite production bundle).
+- This does not verify the browser journeys against the live Supabase project; the Gemini key and Vercel origin are still pending.
+
+### Still pending
+
+- User adds `GEMINI_API_KEY` in Supabase Edge Functions → Secrets and deploys the frontend to Vercel.
+- After the Vercel domain is known: set `ALLOWED_ORIGIN` and Supabase Auth Site URL/Redirect URLs to production.
+- Reconcile the already-applied migrations in Supabase CLI history before future `db push`; the CLI repair attempt stalled during remote login-role initialization.
+- Admin allowlist authorization, P0 end-to-end/mobile/failure verification, abuse/rate limiting, data retention, and approved official workshop URL.
+- P1 CSV/date/source filters, recommendation rerun, persistent share pages, and assessment submission assets.
+
+### Checkpoint
+
+- Build 16 checkpoint follows this documentation update.
