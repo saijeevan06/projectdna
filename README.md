@@ -83,6 +83,8 @@ Create a production bundle with `npm run build`.
 - [Feature specification](docs/feature-specification.txt)
 - [Build log and next checkpoint](docs/build-log.md)
 - [Implementation roadmap and current flow](docs/implementation-roadmap.md)
+- [Submission pack: tests, AI worklog draft and video script](docs/submission-pack.md)
+- [Two-page growth plan PDF](output/pdf/Project-DNA-Growth-Plan.pdf)
 
 ## Product boundaries
 

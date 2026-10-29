@@ -522,3 +522,26 @@ These migrations were submitted through the hosted SQL Editor because the Supaba
 ### Checkpoint
 
 - `checkpoint: build 17 - AI configured and Vercel deployment ready`
+
+## Build 18 — assessment submission materials
+
+**Status:** Draft deliverables prepared; live deployment and user-recorded evidence remain pending.
+
+### Delivered
+
+- Created a polished two-page growth plan covering the seven-day plan, channel hypotheses, INR 2,000 budget ceiling, measurement and guardrails.
+- Created a submission pack with a paste-ready paragraph for three tests, the GitHub working-asset link plus a Vercel URL field, three AI-worklog summaries, a 3-minute video script and a draft response about rejected suggestions.
+- Labeled the channel targets and experiments as hypotheses; no campaign outcomes or test results are claimed.
+- Labeled worklog examples as summaries rather than verbatim AI transcripts, because the build records do not preserve exact model outputs for each interaction.
+- Added both artifacts to the README and roadmap. The growth plan PDF was rendered and visually reviewed; it has exactly two pages.
+
+### Still pending
+
+- Deploy to Vercel, add frontend environment variables there, and configure the production origin/Auth redirects in Supabase.
+- Upload the PDF to an accepted share host if the submission form requires a shareable URL; record and upload the 3-minute walkthrough.
+- Verify the AI-worklog examples against actual conversation evidence and personalize the rejected-suggestion answer before submitting.
+- Run live acceptance and finish the remaining operational controls and migration-ledger reconciliation before any future `supabase db push`.
+
+### Checkpoint
+
+- `checkpoint: build 18 - assessment submission materials`
