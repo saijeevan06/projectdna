@@ -17,6 +17,12 @@ const profileQuestions = [
   { key: 'time', title: 'How much time can you spend?', options: ['1 day', '1 week', '1 month'] },
 ] as const
 const interestOptions = ['Web development', 'AI', 'ML', 'Computer vision', 'NLP', 'IoT', 'Cybersecurity', 'Data analytics', 'Core engineering']
+const roleSuggestions = [
+  { group: 'Software & product', roles: ['Frontend developer', 'Backend developer', 'Full-stack developer', 'Mobile app developer', 'UI/UX designer', 'Product designer'] },
+  { group: 'AI & data', roles: ['AI/ML engineer', 'Data analyst', 'Data scientist', 'Data engineer', 'NLP engineer'] },
+  { group: 'Infrastructure & security', roles: ['Cloud/DevOps engineer', 'Cybersecurity analyst', 'Network engineer'] },
+  { group: 'Core engineering', roles: ['Embedded/IoT engineer', 'Robotics engineer', 'Mechanical design engineer', 'Electronics engineer', 'Civil engineer'] },
+]
 
 function App() {
   const [path, setPath] = useState<Path>(null)
@@ -241,7 +247,7 @@ function App() {
                 <label className="field-label">PUBLIC GITHUB REPOSITORY <span>OPTIONAL</span><div className="input-wrap"><Github size={18} /><input type="url" value={githubUrl} onChange={(event) => setGithubUrl(event.target.value)} placeholder="https://github.com/you/your-project" /></div></label>
                 <label className="field-label">README OR PROJECT DESCRIPTION <span>PASTE FALLBACK</span><textarea rows={4} maxLength={12000} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Paste your README or describe the problem, users and what the project does." /></label>
                 <div className="character-count">{projectDescription.length.toLocaleString()} / 12,000 characters</div>
-              </> : <label className="field-label">ROLE YOU’RE AIMING FOR<div className="input-wrap"><Sparkles size={18} /><input type="text" maxLength={100} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. AI engineer, product designer…" /></div></label>}
+              </> : <div className="role-picker"><label className="field-label">ROLE YOU’RE AIMING FOR<div className="input-wrap"><Sparkles size={18} /><input type="text" maxLength={100} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="Type a role or choose a suggestion below" /></div></label><p className="role-picker-hint">Choose a suggested role, or enter any role in your own words.</p>{roleSuggestions.map((group) => <section className="role-group" key={group.group}><h2>{group.group}</h2><div className="role-chips">{group.roles.map((role) => <button type="button" className={`role-chip ${targetRole === role ? 'selected' : ''}`} aria-pressed={targetRole === role} key={role} onClick={() => setTargetRole(role)}>{role}</button>)}</div></section>)}</div>}
               {error && <p className="form-error" role="alert">{error}</p>}
               <button className="continue-button" onClick={continueFromContext}>Continue <ArrowRight size={17} /></button>
               <p className="privacy-note">GitHub reads use a secure server function. Pasted text can use the local template. We never clone or run repository code.</p>

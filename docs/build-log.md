@@ -172,6 +172,31 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 07: workshop conversion flow with honest official handoff vs clearly labeled demo capture. Continue with unique registration handling, optional referrals and the basic admin funnel.
 
+## Build 09 — guided role selection
+
+**Status:** Complete.
+**Scope:** Help Path B users select a useful target role without limiting them to a fixed list.
+
+### Delivered
+
+- Added role suggestions grouped into Software & product, AI & data, Infrastructure & security, and Core engineering.
+- Selecting a suggestion fills the existing target-role field and continues through the current role-matched recommendation flow.
+- Free-text roles remain supported, so suggestions do not constrain the user.
+- Updated README and roadmap. Supabase connection work remains pending credentials; current frontend function calls use the legacy JWT-style anon key and need migration before switching to a new publishable key.
+
+### Verification
+
+- `npm run build` completed successfully (TypeScript check and Vite production bundle).
+- `git diff --check` passed.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 09 - guided role selection`.
+
+### Next build
+
+- Build 10: migrate Supabase browser/function auth to publishable keys, connect the project, validate migrations and admin access, then address deployment safeguards.
+
 ## Build 08 — referrals and admin metrics
 
 **Status:** Implemented; live Supabase setup pending.

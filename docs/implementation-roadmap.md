@@ -59,6 +59,6 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 ## Current checkpoint and next build
 
-**Build 08:** Optional registration referral codes, attribution and aggregate invite progress are implemented. Admins sign in through Supabase Auth; a server function validates their token and checks the `admin_users` allowlist before returning counts only. The dashboard includes demo registrations, self-reported eligible/other totals, sources, daily counts, funnel and referral totals. The service role remains server-side.
+**Build 09:** Path B now offers role suggestions grouped across software/product, AI/data, infrastructure/security and core engineering, while preserving custom role text. Optional referrals and the allowlisted admin metrics from Build 08 remain in place.
 
-**Next:** Build 09 — configure and validate Supabase end-to-end, review the mobile journey, add rate limiting and retention handling, and prepare deployment/demo operations. Put browser values in `.env.local`, privileged keys in Edge Function secrets, apply migrations, deploy functions and seed the admin allowlist. Never put the service-role key in Vite variables.
+**Next:** Build 10 — migrate the current legacy anon-key function calls to Supabase's publishable-key model, then configure and validate the project, review mobile behavior, add rate limiting and retention handling, and prepare deployment. Keep privileged keys in Edge Function secrets; never put them in Vite variables. Live validation requires your project values.
