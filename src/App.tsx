@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles, Copy, LockKeyhole } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles, Copy, LockKeyhole } from 'lucide-react'
 import type { Profile } from './types'
 import { projectCatalogue, recommendProjects, type ProjectIdea } from './data/projects'
 import { buildMakeover, type Makeover } from './lib/makeover'
@@ -25,7 +25,7 @@ const roleSuggestions = [
 ]
 
 function App() {
-  const [path, setPath] = useState<Path>(null)
+  const [path, setPath] = useState<Path>(() => window.location.hash === '#improve' ? 'improve' : window.location.hash === '#discover' ? 'discover' : null)
   const [step, setStep] = useState<'context' | 'profile' | 'summary' | 'fallback' | 'results'>('context')
   const [githubUrl, setGithubUrl] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
@@ -46,10 +46,51 @@ function App() {
   const [adminToken, setAdminToken] = useState('')
   const [adminError, setAdminError] = useState('')
   const [adminBusy, setAdminBusy] = useState(false)
+  const [scrollProgress, setScrollProgress] = useState(0)
 
-  useEffect(() => { void trackProjectEvent('landing') }, [])
+  useEffect(() => {
+    void trackProjectEvent('landing')
+    const syncRoute = () => {
+      const nextPath = window.location.hash === '#improve' ? 'improve' : window.location.hash === '#discover' ? 'discover' : null
+      setPath(nextPath)
+      if (nextPath) setStep('context')
+    }
+    const updateProgress = () => {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight
+      setScrollProgress(scrollable > 0 ? window.scrollY / scrollable : 0)
+    }
+    window.addEventListener('popstate', syncRoute)
+    window.addEventListener('hashchange', syncRoute)
+    window.addEventListener('scroll', updateProgress, { passive: true })
+    updateProgress()
+    return () => {
+      window.removeEventListener('popstate', syncRoute)
+      window.removeEventListener('hashchange', syncRoute)
+      window.removeEventListener('scroll', updateProgress)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (path) return
+    const revealItems = document.querySelectorAll<HTMLElement>('.reveal:not(.is-visible)')
+    if (!('IntersectionObserver' in window)) {
+      revealItems.forEach((item) => item.classList.add('is-visible'))
+      return
+    }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.12 })
+    revealItems.forEach((item) => observer.observe(item))
+    return () => observer.disconnect()
+  }, [path])
 
   function startPath(nextPath: Exclude<Path, null>) {
+    window.history.pushState({ projectDnaPath: nextPath }, '', `#${nextPath}`)
     setPath(nextPath)
     setStep('context')
     setError('')
@@ -63,6 +104,18 @@ function App() {
     setProjectDescription('')
     setTargetRole('')
     setProfile({ branch: '', experience: '', technology: '', interests: [], time: '' })
+  }
+  function returnHome() {
+    window.history.pushState({}, '', '#home')
+    setPath(null)
+    setStep('context')
+    setError('')
+  }
+  function navigateLandingSection(section: string) {
+    if (!path) return
+    window.history.pushState({}, '', `#${section}`)
+    setPath(null)
+    window.setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' }), 40)
   }
   function changeStep(nextStep: typeof step) {
     setStep(nextStep)
@@ -198,13 +251,17 @@ function App() {
 
   return (
     <main className="page-shell">
+      <div className="scroll-progress" aria-hidden="true" style={{ transform: `scaleX(${scrollProgress})` }} />
       <nav className="topbar" aria-label="Main navigation">
-        <a className="brand" href="#home" onClick={(event) => { event.preventDefault(); setPath(null) }}>
+        <a className="brand" href="#home" onClick={(event) => { event.preventDefault(); returnHome() }}>
           <span className="brand-mark"><Sparkles size={17} strokeWidth={2.4} /></span>
           <span>project<span className="brand-light">dna</span></span>
         </a>
+        <div className="topbar-links">
+          <a href="#how-it-works" onClick={() => navigateLandingSection('how-it-works')}>How it works</a>
+          <a href="#roles" onClick={() => navigateLandingSection('roles')}>Explore roles</a>
+        </div>
         <div className="topbar-right">
-          <span className="nav-note">A better next step starts here</span>
           <a className="workshop-link" href="#workshop">Free AI workshop <ArrowUpRight size={15} /></a>
           <button className="text-button" onClick={() => { setAdminOpen(true); setAdminError('') }}><LockKeyhole size={14} /> Admin</button>
         </div>
@@ -214,12 +271,13 @@ function App() {
         <section className="hero" id="home">
           <div className="hero-copy">
             <div className="eyebrow"><span className="eyebrow-dot" /> YOUR NEXT PROJECT, FIGURED OUT</div>
-            <h1>Make your next<br />move <span className="serif-accent">count.</span></h1>
-            <p className="hero-description">You have the ambition. Let’s find the project that gets you closer to the role you want — or make the one you have stand out.</p>
-            <div className="hero-proof"><div className="avatar-stack"><i>R</i><i>A</i><i>K</i><i>+</i></div><span>Built for curious builders, at every stage.</span></div>
+            <h1>Turn what you know<br />into what’s <span className="serif-accent">next.</span></h1>
+            <p className="hero-description">Get a practical project direction for the role you want, or find the next version of something you’ve already built.</p>
+            <div className="hero-actions"><button className="continue-button" onClick={() => startPath('discover')}>Find my next project <ArrowRight size={17} /></button><button className="hero-secondary" onClick={() => startPath('improve')}><Github size={16} /> Improve a project</button></div>
+            <div className="hero-proof"><span className="proof-sparkle">✳</span><span>Useful ideas first. Workshop when you’re ready.</span></div>
           </div>
           <div className="path-panel">
-            <div className="panel-heading"><span>CHOOSE YOUR STARTING POINT</span><span className="step-count">01 <b>/ 02</b></span></div>
+            <div className="panel-heading"><span>START WHERE YOU ARE</span><span className="step-count">01 <b>/ 02</b></span></div>
             <button className="path-card" onClick={() => startPath('improve')}>
               <span className="path-icon purple"><Github size={20} /></span>
               <span className="path-text"><strong>I have a project</strong><small>Give it an AI-powered glow-up</small></span>
@@ -231,13 +289,15 @@ function App() {
               <ArrowRight className="path-arrow" size={19} />
             </button>
             <div className="panel-foot"><span className="sparkle-mini">✳</span> No perfect prompt needed. Just start where you are.</div>
+            <div className="path-panel-glow" aria-hidden="true"><i /><i /><i /></div>
           </div>
-          <div className="floating-note"><span className="note-icon">✦</span><span><b>Small steps.</b><br />Real momentum.</span></div>
+          <div className="floating-note"><span className="note-icon">✦</span><span><b>Pick a direction.</b><br />Build with purpose.</span></div>
+          <a className="hero-scroll" href="#how-it-works"><span>SCROLL TO EXPLORE</span><ArrowDown size={14} /></a>
           <div className="hero-index">01 <span>—</span> YOUR NEXT CHAPTER</div>
         </section>
       ) : (
         <section className="intake-wrap">
-          <button className="back-button" onClick={() => step === 'context' ? (setPath(null), setError('')) : changeStep(step === 'summary' ? 'profile' : step === 'results' ? (path === 'discover' ? 'profile' : 'summary') : step === 'fallback' ? 'summary' : 'context')}><ArrowLeft size={16} /> Back</button>
+          <button className="back-button" onClick={() => step === 'context' ? returnHome() : changeStep(step === 'summary' ? 'profile' : step === 'results' ? (path === 'discover' ? 'profile' : 'summary') : step === 'fallback' ? 'summary' : 'context')}><ArrowLeft size={16} /> Back</button>
           <div className="intake-card">
             {step === 'context' && <>
               <div className="eyebrow"><span className="eyebrow-dot" /> FIRST, A LITTLE CONTEXT</div>
@@ -303,6 +363,8 @@ function App() {
         </section>
       )}
 
+      {!path && <LandingExperience onStart={(nextPath) => startPath(nextPath)} onChooseRole={(role) => { startPath('discover'); setTargetRole(role) }} />}
+
       <footer className="site-footer" id="workshop">
         <div><span className="footer-burst">✳</span><span><b>Build Your First AI Project</b> <i>·</i> A free, 60-minute workshop</span></div>
         <button className="footer-action" onClick={handleWorkshopClick}>Workshop next step <ArrowUpRight size={15} /></button>
@@ -325,6 +387,35 @@ function App() {
       }} onRefresh={async () => { if (!adminToken) return; setAdminBusy(true); setAdminError(''); try { setAdminMetrics(await fetchAdminMetrics(adminToken)) } catch { setAdminError('Metrics could not be refreshed. Please sign in again.') } finally { setAdminBusy(false) } }} />}
     </main>
   )
+}
+
+function LandingExperience({ onStart, onChooseRole }: { onStart: (path: Exclude<Path, null>) => void; onChooseRole: (role: string) => void }) {
+  const featuredRoles = ['Frontend developer', 'AI/ML engineer', 'Data analyst', 'Cybersecurity analyst', 'Embedded/IoT engineer', 'Mechanical design engineer']
+  return <div className="landing-experience">
+    <section className="signal-strip" aria-label="Project interests">
+      <div className="signal-track" aria-hidden="true">{[0, 1].map((copy) => <span className="signal-copy" key={copy}>{['WEB DEVELOPMENT', 'ARTIFICIAL INTELLIGENCE', 'DATA & ML', 'CYBERSECURITY', 'IOT & ROBOTICS', 'CORE ENGINEERING'].map((label) => <b key={`${copy}-${label}`}>{label}<i>✳</i></b>)}</span>)}</div>
+      <span className="sr-only">Explore web development, artificial intelligence, data, cybersecurity, IoT, robotics and core engineering.</span>
+    </section>
+    <section className="how-section reveal" id="how-it-works">
+      <div className="section-kicker"><span>THE PROJECT DNA LOOP</span><i>02 — 03</i></div>
+      <div className="section-heading-row"><h2>A little clarity.<br /><span className="serif-accent">A lot of momentum.</span></h2><p>Skip the blank page. Start with the experience you have and leave with a project plan you can actually begin.</p></div>
+      <div className="how-grid">
+        <article className="how-card"><span className="how-number">01</span><div className="how-icon purple"><Compass size={18} /></div><h3>Choose your starting point</h3><p>Bring a project you have, or tell us the role you’re working toward.</p><span className="how-connector" /></article>
+        <article className="how-card"><span className="how-number">02</span><div className="how-icon green"><Sparkles size={18} /></div><h3>Get a useful direction</h3><p>See an improvement roadmap or three project ideas shaped around your time and interests.</p><span className="how-connector" /></article>
+        <article className="how-card"><span className="how-number">03</span><div className="how-icon amber"><ArrowUpRight size={18} /></div><h3>Make the next move</h3><p>Keep the result, share it if you like, and explore the workshop as an optional next step.</p></article>
+      </div>
+    </section>
+    <section className="role-section reveal" id="roles">
+      <div className="role-section-copy"><div className="section-kicker"><span>START WITH A ROLE</span><i>YOUR PATH, YOUR PACE</i></div><h2>Where do you<br />want to <span className="serif-accent">grow?</span></h2><p>Choose a direction to begin. We’ll shape project suggestions around your branch, experience, preferred technology and available time.</p><button className="text-link-button" onClick={() => onStart('discover')}>Explore all roles <ArrowRight size={15} /></button></div>
+      <div className="featured-role-grid">{featuredRoles.map((role, index) => <button className="featured-role" key={role} onClick={() => onChooseRole(role)}><span className={`role-index tone-${index % 3}`}>0{index + 1}</span><strong>{role}</strong><ArrowUpRight size={15} /></button>)}</div>
+    </section>
+    <section className="build-band reveal">
+      <div className="build-band-orbit orbit-one" /><div className="build-band-orbit orbit-two" />
+      <div className="build-band-copy"><div className="eyebrow"><span className="eyebrow-dot" /> BUILT AROUND YOUR NEXT STEP</div><h2>Good projects start<br />with a <span className="serif-accent">clear why.</span></h2><p>Make your learning visible. Turn an interest into something you can build, explain and keep improving.</p><button className="build-band-button" onClick={() => onStart('improve')}>Give my project a next step <ArrowRight size={16} /></button></div>
+      <div className="build-note-stack" aria-label="Project guidance includes a roadmap, skills and a time estimate"><div className="build-note build-note-main"><small>YOUR NEXT BUILD</small><strong>A direction that fits you.</strong><span><i /> Project idea <i /> Starter roadmap <i /> Skills to practice</span></div><div className="build-note build-note-float"><span className="note-icon">✦</span><span><b>Start small.</b><br />Make it yours.</span></div></div>
+    </section>
+    <section className="final-cta reveal"><div><span className="section-kicker">READY WHEN YOU ARE</span><h2>Let’s find your<br /><span className="serif-accent">next project.</span></h2></div><button className="continue-button" onClick={() => onStart('discover')}>Find my next project <ArrowRight size={17} /></button></section>
+  </div>
 }
 
 function Recommendations({ role, profile, tailoring, selectedProjectId, onSelect, onWorkshop, onEdit }: { role: string; profile: Profile; tailoring: RecommendationResult | null; selectedProjectId: string | null; onSelect: (id: string) => void; onWorkshop: () => void; onEdit: () => void }) {

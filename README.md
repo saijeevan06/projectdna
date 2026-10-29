@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 09 — guided role selection**
+**Build 10 — interactive landing experience**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -20,6 +20,7 @@ Project DNA helps students and developers take a practical next step with a proj
 - Demo registrants can optionally share a referral link; valid referrals are counted in aggregate and never required.
 - Admins sign in through Supabase Auth and an active-user allowlist to view aggregate demo counts, self-reported eligibility, sources, daily activity, funnel and referral totals. No identities are returned.
 - Path B offers selectable role suggestions across software/product, AI/data, infrastructure/security and core engineering, while retaining free-text roles.
+- Landing now has section navigation, direct hash routes for both journeys, featured role shortcuts, a moving interest strip, scroll progress, and reduced-motion-aware reveal animations.
 - Users can review/edit answers; profile and project context remain session-scoped and are not saved.
 - GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 
@@ -42,9 +43,9 @@ npx supabase functions deploy demo-registration
 npx supabase functions deploy project-admin
 ```
 
-Then put the project URL and the legacy JWT-style `anon` key in `.env.local` using [.env.example](.env.example) as a template. The current function callers send that key as a bearer token, so do not substitute a new `sb_publishable_...` key until the function auth wiring is migrated. Supabase is deprecating legacy `anon` and `service_role` keys by end of 2026; key migration is a planned follow-up. Never add a service-role/secret key or AI provider key to frontend variables. Set `VITE_WORKSHOP_URL` only when an approved official workshop URL is available; without it, the result CTA opens the demo capture flow.
+Put the project URL and the legacy JWT-style `anon` key in `.env.local` using [.env.example](.env.example) as a template. This code currently sends the anon key as a bearer token, so do not substitute a new `sb_publishable_...` key until function auth wiring is migrated. Supabase says legacy `anon` and `service_role` keys are being deprecated by the end of 2026; migration is the next backend build. Never add a service-role/secret key or AI provider key to frontend variables. Set `VITE_WORKSHOP_URL` only when an approved official workshop URL is available; without it, the result CTA opens the demo capture flow. Restart Vite after editing `.env.local`.
 
-Set `SUPABASE_SERVICE_ROLE_KEY` as a Supabase Edge Function secret, never as a `VITE_` variable. To allow dashboard access, create a Supabase Auth user, then add its Auth UUID through the SQL editor:
+Hosted Supabase Edge Functions provide `SUPABASE_URL` and the legacy `SUPABASE_SERVICE_ROLE_KEY` at runtime. Do not copy the service-role key into `.env.local` or the browser. To allow dashboard access, create a Supabase Auth user, then add its Auth UUID through the SQL editor:
 
 ```sql
 insert into public.admin_users (user_id, is_active)

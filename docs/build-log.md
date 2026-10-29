@@ -172,6 +172,36 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 07: workshop conversion flow with honest official handoff vs clearly labeled demo capture. Continue with unique registration handling, optional referrals and the basic admin funnel.
 
+## Build 10 — interactive landing experience
+
+**Status:** Complete; live deployment remains pending.
+**Scope:** Make the first visit more explorable through clear routes, active CTAs, scroll-linked sections and restrained motion.
+
+### Delivered
+
+- Reworked hero messaging and primary/secondary entry actions while retaining both existing project paths.
+- Added How it works and Explore roles navigation, project-guidance sections, featured role shortcuts, final CTA and a scrolling interest strip.
+- Added shareable `#improve` and `#discover` entry routes and browser Back support for returning to the landing page.
+- Added reading progress, gentle entrance/hover motion and reduced-motion handling.
+- Created a local `.env.local` from the example with blank values; it is ignored by Git so the user can paste their own URL and anon key without sharing them.
+- Corrected README setup notes: current hosted Supabase functions provide `SUPABASE_URL` and legacy service-role environment values automatically; only model provider secrets need optional manual setup for AI.
+- Audited the PRD, TRD and feature spec against current implementation and recorded outstanding integration, quality and submission work in the roadmap.
+
+### Verification
+
+- `npm run build` completed successfully.
+- Browser smoke check confirmed `#discover` opens Path B and Back returns to `#home`.
+- Mobile viewport check found no horizontal overflow.
+- Supabase was not deployed or modified through an external connector in this workspace.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 10 - interactive landing experience`.
+
+### Next build
+
+- Build 11: migrate legacy anon-key bearer calls to the current publishable-key / function auth pattern, then deploy and validate the connected Supabase project.
+
 ## Build 09 — guided role selection
 
 **Status:** Complete.
