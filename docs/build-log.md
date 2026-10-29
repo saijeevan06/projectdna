@@ -138,6 +138,40 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 06: tailor Path B's curated three-card shortlist through the provider adapter while keeping the deterministic cards as fallback; then exercise the live provider chain after Supabase secrets are configured.
 
+## Build 06 — AI-tailored Path B catalogue
+
+**Status:** Complete
+**Scope:** Tailor Path B's three deterministic catalogue matches without letting model output replace or invent the projects.
+
+### Delivered
+
+- Moved the curated project catalogue and deterministic ranking into a shared module consumed by both the browser and Supabase functions.
+- Added a `project-recommendations` Edge Function that validates the role/profile, ranks the catalogue, and selects exactly three projects before any provider call.
+- Reuses the server-only Gemini → Groq provider adapters. The model may tailor only one short summary and a three-step roadmap per shortlisted project. The server keeps catalogue IDs, titles, problem, outcome, technologies, difficulty, time and skills unchanged.
+- Added local validation for exactly three ordered summaries/roadmaps, string sizes and IDs. Invalid or missing provider output returns the curated descriptions/roadmaps.
+- The browser calls the Edge Function only when configured. If it is absent or errors, it presents the same local catalogue suggestions and explains their source.
+- Added Supabase JWT verification configuration for the new function and updated README, roadmap and build log.
+
+### Verification
+
+- `npm run build` completed successfully for the React/TypeScript frontend.
+- Provider API contracts were reviewed against official docs: [Gemini structured outputs](https://ai.google.dev/gemini-api/docs/generate-content/structured-output), [Groq structured outputs](https://console.groq.com/docs/structured-outputs), [Groq model deprecations](https://console.groq.com/docs/deprecations).
+
+### Limits carried forward
+
+- No Supabase project, Deno runtime or provider secrets are configured here. The Edge Function and live provider/fallback responses are not deployed or exercised in this workspace.
+- Path B's curated local results work without AI; Path A also has its local template fallback.
+- Per-user/IP rate limiting is still required before public deployment of either model-backed Edge Function.
+- Registration, official workshop handoff, demo capture, referrals, campaign event storage and admin dashboard remain unimplemented.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 06 - AI-tailored Path B catalogue`.
+
+### Next build
+
+- Build 07: workshop conversion flow with honest official handoff vs clearly labeled demo capture. Continue with unique registration handling, optional referrals and the basic admin funnel.
+
 ## Build 01 — app foundation and journey entry
 
 **Status:** Complete

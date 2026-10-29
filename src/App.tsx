@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles } from 'lucide-react'
 import type { Profile } from './types'
-import { recommendProjects, type ProjectIdea } from './data/projects'
+import { projectCatalogue, recommendProjects, type ProjectIdea } from './data/projects'
 import { buildMakeover, type Makeover } from './lib/makeover'
 import { fetchGitHubMakeover, hasProjectFunctionConfig, isValidGitHubRepoUrl, ProjectApiError } from './lib/projectApi'
+import { fetchProjectRecommendations, type RecommendationResult } from './lib/recommendationApi'
 
 type Path = 'improve' | 'discover' | null
 
@@ -27,6 +28,7 @@ function App() {
   const [makeover, setMakeover] = useState<Makeover | null>(null)
   const [fallbackNotice, setFallbackNotice] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [recommendationResult, setRecommendationResult] = useState<RecommendationResult | null>(null)
 
   function startPath(nextPath: Exclude<Path, null>) {
     setPath(nextPath)
@@ -35,6 +37,7 @@ function App() {
     setContextNotice('')
     setMakeover(null)
     setFallbackNotice('')
+    setRecommendationResult(null)
     setGithubUrl('')
     setProjectDescription('')
     setTargetRole('')
@@ -77,6 +80,28 @@ function App() {
       return
     }
     changeStep('summary')
+  }
+
+  async function generateRecommendations() {
+    setGenerating(true)
+    setError('')
+    const shortlist = recommendProjects(profile, targetRole)
+    try {
+      if (!hasProjectFunctionConfig()) throw new Error('SERVER_FUNCTION_NOT_CONFIGURED')
+      const result = await fetchProjectRecommendations(targetRole, profile)
+      setRecommendationResult(result)
+    } catch {
+      setRecommendationResult({
+        provider: 'catalogue',
+        providerNote: hasProjectFunctionConfig()
+          ? 'The recommendation service is not available right now. These curated matches are still ready to use.'
+          : 'Curated matches from the local catalogue. AI tailoring is available when the server function is configured.',
+        projects: shortlist.map((project) => ({ id: project.id, roadmap: project.roadmap })),
+      })
+    } finally {
+      setStep('results')
+      setGenerating(false)
+    }
   }
 
   async function runMakeover(usePasteOnly = false) {
@@ -161,7 +186,7 @@ function App() {
                 <label className="field-label">PUBLIC GITHUB REPOSITORY <span>OPTIONAL</span><div className="input-wrap"><Github size={18} /><input type="url" value={githubUrl} onChange={(event) => setGithubUrl(event.target.value)} placeholder="https://github.com/you/your-project" /></div></label>
                 <label className="field-label">README OR PROJECT DESCRIPTION <span>PASTE FALLBACK</span><textarea rows={4} maxLength={12000} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Paste your README or describe the problem, users and what the project does." /></label>
                 <div className="character-count">{projectDescription.length.toLocaleString()} / 12,000 characters</div>
-              </> : <label className="field-label">ROLE YOU’RE AIMING FOR<div className="input-wrap"><Sparkles size={18} /><input type="text" value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. AI engineer, product designer…" /></div></label>}
+              </> : <label className="field-label">ROLE YOU’RE AIMING FOR<div className="input-wrap"><Sparkles size={18} /><input type="text" maxLength={100} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. AI engineer, product designer…" /></div></label>}
               {error && <p className="form-error" role="alert">{error}</p>}
               <button className="continue-button" onClick={continueFromContext}>Continue <ArrowRight size={17} /></button>
               <p className="privacy-note">GitHub reads use a secure server function. Pasted text can use the local template. We never clone or run repository code.</p>
@@ -192,7 +217,7 @@ function App() {
               </div>
               {path === 'discover' ? <>
                 <div className="prototype-note">Matched from our curated catalogue using your role, interests, technology and available time. No AI provider is needed.</div>
-                <button className="continue-button" onClick={() => changeStep('results')}>Get project recommendations <ArrowRight size={17} /></button>
+                <button className="continue-button" onClick={generateRecommendations} disabled={generating}>{generating ? 'Finding your matches…' : 'Get project recommendations'} {!generating && <ArrowRight size={17} />}</button>
               </> : <>
                 <div className="prototype-note">We’ll use only the public README or the text you provide. Suggestions are templates; source code is not inspected.</div>
                 <button className="continue-button" onClick={() => runMakeover()} disabled={generating}>{generating ? 'Preparing your makeover…' : 'Create my project makeover'} {!generating && <ArrowRight size={17} />}</button>
@@ -211,7 +236,7 @@ function App() {
               <p className="privacy-note">No repository is cloned, crawled or executed. The template uses only the text you paste.</p>
             </>}
 
-            {step === 'results' && path === 'discover' && <Recommendations role={targetRole} profile={profile} onEdit={() => changeStep('profile')} />}
+            {step === 'results' && path === 'discover' && <Recommendations role={targetRole} profile={profile} tailoring={recommendationResult} onEdit={() => changeStep('profile')} />}
             {step === 'results' && path === 'improve' && makeover && <MakeoverResults makeover={makeover} notice={fallbackNotice} onEdit={() => changeStep('summary')} />}
           </div>
         </section>
@@ -225,27 +250,32 @@ function App() {
   )
 }
 
-function Recommendations({ role, profile, onEdit }: { role: string; profile: Profile; onEdit: () => void }) {
-  const projects = recommendProjects(profile, role)
+function Recommendations({ role, profile, tailoring, onEdit }: { role: string; profile: Profile; tailoring: RecommendationResult | null; onEdit: () => void }) {
+  const rankedProjects = recommendProjects(profile, role)
+  const remoteProjects = tailoring?.projects.map((item) => projectCatalogue.find((project) => project.id === item.id)).filter((project): project is ProjectIdea => Boolean(project)) || []
+  const projects = remoteProjects.length === 3 ? remoteProjects : rankedProjects
+  const providerLabel = tailoring?.provider === 'gemini' ? 'Gemini-tailored' : tailoring?.provider === 'groq' ? 'Groq-tailored' : 'Curated matches'
   return <>
     <div className="eyebrow"><span className="eyebrow-dot" /> YOUR PROJECT SHORTLIST</div>
     <h1>Three ways<br />to <span className="serif-accent">grow.</span></h1>
     <p className="hero-description">Ideas for a <b>{role}</b> path, shaped around {profile.time.toLowerCase()}, {profile.technology === 'No preference' ? 'any technology' : profile.technology}, and your interests.</p>
-    <div className="catalogue-note"><Sparkles size={15} /> Curated matches · Works without AI</div>
-    <div className="recommendation-list">{projects.map((project, index) => <ProjectCard key={project.id} project={project} index={index + 1} />)}</div>
+    <div className="catalogue-note"><Sparkles size={15} /> {providerLabel} · Catalogue projects preserved</div>
+    {tailoring?.providerNote && <div className="basis-note">{tailoring.providerNote}</div>}
+    <div className="recommendation-list">{projects.map((project, index) => <ProjectCard key={project.id} project={project} tailoring={tailoring?.projects.find((item) => item.id === project.id)} index={index + 1} />)}</div>
     <div className="results-workshop"><div><b>Keep building with us</b><span>Join the free 60-minute AI project workshop.</span></div><a href="#workshop">Workshop info <ArrowUpRight size={14} /></a></div>
     <button className="text-button" onClick={onEdit}><ArrowLeft size={14} /> Edit your answers</button>
   </>
 }
 
-function ProjectCard({ project, index }: { project: ProjectIdea; index: number }) {
+function ProjectCard({ project, tailoring, index }: { project: ProjectIdea; tailoring?: { tailoredSummary?: string; roadmap: string[] }; index: number }) {
   return <article className="recommendation-card">
     <div className="recommendation-topline"><span>PROJECT 0{index}</span><span>{project.difficulty} · {project.time}</span></div>
     <h2>{project.title}</h2>
     <p className="project-problem">{project.problem}</p>
+    {tailoring?.tailoredSummary && <p className="tailored-summary">{tailoring.tailoredSummary}</p>}
     <div className="project-outcome"><small>WHAT YOU’LL MAKE</small><p>{project.outcome}</p></div>
     <div className="project-tags">{project.technologies.map((technology) => <span key={technology}>{technology}</span>)}</div>
-    <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{project.roadmap.map((step) => <li key={step}>{step}</li>)}</ol></div></div>
+    <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{(tailoring?.roadmap || project.roadmap).map((step) => <li key={step}>{step}</li>)}</ol></div></div>
   </article>
 }
 
