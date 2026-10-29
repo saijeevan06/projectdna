@@ -1,0 +1,707 @@
+PROJECT DNA
+
+Product Requirements Document (PRD)
+
+Student project improvement, project discovery and workshop registration growth
+
+Document version
+
+1.0 — consolidated draft
+
+Purpose
+
+Build specification for the NxtWave Growth Intern challenge
+
+Assessment constraints
+
+48-hour submission window; ₹2,000 campaign budget; 7-day campaign; target 500 eligible student registrations
+
+Delivery mode
+
+AI-assisted prototype; campaign execution and contacting students are not required for the assessment
+
+Status
+
+Implementation-ready draft based on reviewed product decisions
+
+Scope note: this specification defines the proposed prototype and its boundaries. Real registration processing requires an approved NxtWave registration URL or integration and appropriate permission.
+
+
+NxtWave Growth Challenge • Draft specification • Page 
+
+PROJECT DNA  |  PRD
+
+Contents
+
+1. Executive summary and product problem
+
+2. Goals, non-goals and success metrics
+
+3. Users and supported journeys
+
+4. Product requirements and business rules
+
+5. UX content and registration conversion
+
+6. Measurement and growth assumptions
+
+7. Acceptance criteria
+
+8. Scope boundaries, risks and assumptions
+
+9. NxtWave assessment mapping
+
+
+NxtWave Growth Challenge • Draft specification • Page 
+
+PROJECT DNA  |  PRD
+
+1. Executive summary and product problem
+
+1.1 Product summary
+
+Project DNA is a lightweight AI-assisted project guidance platform for students and developers who want to upskill in AI, improve existing projects, or discover a practical project aligned with a target role. It gives useful project guidance before asking users to register for NxtWave’s “Build Your First AI Project in 60 Minutes” workshop. A simple referral flow and basic growth dashboard help measure whether the experience supports registrations.
+
+1.2 Problem statement
+
+Students and developers often have an existing college or personal project but are unsure which practical AI features would improve it, how to scope the improvements, or how to explain the work for a target role. Users without a suitable project may not know what to build next. At the same time, NxtWave needs a measurable way to attract 500 final-year engineering students to a free 60-minute AI workshop within seven days, with a ₹2,000 campaign budget. Generic promotion links provide little personalized value and weak reasons to share.
+
+Product thesis
+
+Give visitors a useful, personalized project outcome first; make the workshop a natural next step; use optional sharing and source attribution to support measurable acquisition.
+
+1.3 Product positioning
+
+Project DNA is not a code-generation platform, a full repository auditor, a course platform or a workshop delivery system. It is a bounded project-guidance experience connected to a workshop registration conversion path.
+
+2. Goals, non-goals and success metrics
+
+2.1 Goals
+
+Help users receive project improvement recommendations or role-aligned project suggestions with minimal friction.
+
+Present useful results before requiring workshop registration, while keeping the workshop call to action visible on the results page.
+
+Support Gemini as the primary AI provider and Groq as fallback, with deterministic templates when both fail.
+
+Allow a failed or unsupported GitHub URL to be replaced by a pasted README or project description.
+
+Collect and measure registration data in a way that distinguishes demo/test activity from real registrations.
+
+Provide optional unique referral links and an aggregate three-friend progress target without blocking workshop access.
+
+Provide basic channel and conversion metrics to support the campaign plan.
+
+2.2 Non-goals / out of scope
+
+Full repository cloning, source-code crawling, dependency installation, execution, test-running or whole-codebase analysis.
+
+Automatic code edits, pull-request creation, autonomous project implementation or guaranteed production-ready code.
+
+Advanced public college leaderboards, ambassador reward programs, official endorsements or unapproved prizes.
+
+Complex analytics pipelines, attribution across unrelated devices, advertising-platform integrations or predictive growth models.
+
+Contacting students, sending unsolicited bulk messages or executing the real marketing campaign as part of this assessment.
+
+Claiming that the target of 500 registrations has been achieved using simulated data.
+
+Replacing or impersonating NxtWave’s official registration system without an approved URL or integration.
+
+2.3 Success metrics
+
+Metric
+
+Definition
+
+Use
+
+Eligible registrations
+
+Unique, successfully recorded registrations that meet the campaign’s final-year engineering student eligibility definition. In demo mode, report as simulated/recorded demo registrations, not real NxtWave registrations.
+
+Primary campaign target: 500 in 7 days.
+
+Project flow start rate
+
+Unique sessions that begin either project path ÷ unique landing sessions.
+
+Check whether the product proposition is clear.
+
+Result generation rate
+
+Completed result views ÷ project flow starts.
+
+Find friction in inputs, URL retrieval or AI generation.
+
+Workshop CTA click rate
+
+Workshop CTA clicks ÷ result views.
+
+Evaluate whether project value leads users to the workshop.
+
+Registration completion rate
+
+Successful unique registrations ÷ registration form starts.
+
+Find form friction.
+
+Referral-sourced registrations
+
+Unique registrations attributed to a valid referral code.
+
+Measure contribution of optional sharing.
+
+Channel registrations
+
+Recorded registrations by source/UTM/referral.
+
+Compare campaign channels.
+
+AI provider fallback rate
+
+Generations handled by secondary provider or template fallback ÷ total generation attempts.
+
+Monitor reliability, not user growth by itself.
+
+Targets beyond the 500-registration goal should be treated as planning assumptions until the campaign has data. The 500 target is not guaranteed by the application; acquisition depends on distribution, relevance and conversion.
+
+3. Users and supported journeys
+
+3.1 User types
+
+User type
+
+Primary motivation
+
+Required details
+
+Campaign treatment
+
+Student
+
+Build resume-relevant projects, improve a college project and prepare for placements.
+
+Branch, experience, preferred technology, interests, available time, target role; current project is optional.
+
+Only students meeting the final-year engineering eligibility criteria count toward the 500-student campaign target.
+
+Developer
+
+Upskill in AI, add AI capabilities to a personal/work project, explore a new role.
+
+Target role, experience, preferred technology, interests, available time; project is optional.
+
+Can use Project DNA and may register if workshop rules permit, but do not count as an eligible final-year student unless the eligibility condition is met.
+
+3.2 Path A — Improve my existing project
+
+User chooses “Improve my project.”
+
+User enters a public GitHub repository URL. If fetching fails or the URL is unsupported, offer a paste field for README text or a plain-language project description. Pasting a description must be a first-class fallback, not a dead-end error.
+
+User provides or confirms target role, experience level, relevant technology, interest and available time.
+
+Backend retrieves only bounded public repository metadata and README where feasible. It does not clone or analyze all source files.
+
+AI returns a structured makeover with current-project summary basis, improvement ideas, AI features, technology suggestions, difficulty, estimated time, a basic roadmap, skills and an optional resume bullet.
+
+Results clearly say whether they are based on retrieved README/metadata or on text supplied by the user.
+
+Workshop CTA remains visible on the results page; users can view the result before registering.
+
+3.3 Path B — Find my next project
+
+User chooses “Find a project for my target role.”
+
+User provides user type, target role, experience, preferred technology, interests and time available; branch is requested for student users.
+
+The system selects a small set of suitable items from a curated project catalogue and uses the AI provider to tailor the explanations and roadmap.
+
+Show three recommendations by default. Each result contains problem, expected output, technologies, difficulty, estimated time, skills and a starter roadmap.
+
+If AI providers fail, return curated template recommendations with a visible fallback notice.
+
+3.4 Shared journey
+
+Landing page → choose user type → choose project path → enter minimal relevant information → receive project result → workshop CTA → registration form or approved official registration handoff → confirmation → optional referral link and progress → share to WhatsApp or copy link.
+
+4. Product requirements and business rules
+
+ID
+
+Requirement
+
+Priority
+
+Detailed requirement
+
+FR-001
+
+Landing / proposition
+
+Must
+
+Explain value in one screen: improve an existing project or discover a new one. Prominently state the free workshop and 60-minute duration only as supplied by the assessment.
+
+FR-002
+
+User type
+
+Must
+
+Offer Student and Developer. Show only relevant form fields. Student branch and final-year eligibility are required for campaign qualification.
+
+FR-003
+
+Path selector
+
+Must
+
+Offer Improve my project (Path A) and Find my next project (Path B). Both lead to a results page and workshop CTA.
+
+FR-004
+
+GitHub input
+
+Must
+
+Accept a supported public github.com repository URL. Validate owner/repository shape. Do not accept arbitrary URLs for server-side fetching.
+
+FR-005
+
+README/description fallback
+
+Must
+
+When URL retrieval fails, explain the reason in user-friendly language and allow pasted README or project description. The user can proceed without retrying a URL.
+
+FR-006
+
+Role-aware context
+
+Must
+
+Collect target role, experience, preferred technologies, interests and available time, with role-appropriate fields for student/developer.
+
+FR-007
+
+Project improvement output
+
+Must
+
+Return a bounded structured result: summary/basis, likely limitation(s), 3–5 proposed improvements, practical AI feature ideas, technology suggestions, difficulty, duration estimate, roadmap, skills and sample resume bullet.
+
+FR-008
+
+Project discovery
+
+Must
+
+Return three curated or AI-tailored projects matching profile and time. Mark estimates as estimates; do not guarantee job outcomes.
+
+FR-009
+
+AI provider fallback
+
+Must
+
+Use Gemini as primary and Groq as fallback (configurable). Validate and normalize output. If both fail, return curated deterministic fallback content.
+
+FR-010
+
+Results view
+
+Must
+
+Display results in readable cards; identify proposed vs existing features and the basis of analysis. Do not require registration just to view generated value.
+
+FR-011
+
+Workshop CTA
+
+Must
+
+Keep a clearly visible CTA on the result page. Registration is the primary conversion. Do not bury it under advanced features.
+
+FR-012
+
+Registration
+
+Must
+
+Capture only agreed fields. Normalize email and prevent duplicate records. Use an approved official destination if supplied; otherwise label internal capture as demo mode.
+
+FR-013
+
+Referral link
+
+Must
+
+After successful registration/capture, issue a unique referral code/link. Explain that referral is optional and show a target of three friends.
+
+FR-014
+
+Referral attribution
+
+Must
+
+Attribute a new unique registration to a valid code when no self-referral/duplicate applies. Return aggregate progress only; never expose other registrants’ details.
+
+FR-015
+
+Share actions
+
+Must
+
+Provide Copy Link and a WhatsApp share link initiated by the user. Do not send unsolicited messages or upload address books.
+
+FR-016
+
+Basic admin dashboard
+
+Must
+
+Authenticated admin sees totals, daily registration counts, source/channel counts, eligible-student count, project-path starts/results/CTA clicks and referral-sourced registrations.
+
+FR-017
+
+Demo/real-data labeling
+
+Must
+
+Clearly mark sample/demo data. Never display simulated records as real NxtWave registrations or real campaign outcomes.
+
+FR-018
+
+Input validation / abuse guard
+
+Must
+
+Validate lengths, enum choices, URL allowlist, request size and rate limits. Show understandable validation errors.
+
+FR-019
+
+Export
+
+Should
+
+If time allows, allow admin CSV export of aggregate or approved registration records with appropriate access controls.
+
+FR-020
+
+Saved projects
+
+Could
+
+Allow local/downloadable results; account-based project history is not required for the assessment MVP.
+
+4.1 Registration eligibility and counting rules
+
+Count a campaign-eligible registration only when the record is successfully stored or the approved official registration integration confirms completion, and the registrant meets the final-year engineering-student eligibility rule.
+
+Use normalized email (trimmed, lowercased) as the MVP deduplication key. A duplicate does not increment the eligible registration count a second time.
+
+Demo-mode registrations must be isolated from any production/official registration data and marked visibly in the admin dashboard.
+
+If the product cannot verify final-year eligibility, show “self-reported eligible registration” rather than “verified student”. Do not claim email verification unless implemented.
+
+When handing off to an external NxtWave form, track the CTA click as a click, not as a completed registration, unless an approved return callback or integration confirms completion.
+
+5. UX content and registration conversion
+
+5.1 UX principles
+
+Value before asking: the user can see the main project result before registration is requested.
+
+Keep the workshop CTA visible on the results screen, near the result summary and at the end of the page.
+
+Progressive disclosure: ask only the fields relevant to the selected path; use sensible defaults and “not sure” options where practical.
+
+No dead-end states: URL failure must offer paste fallback; provider failure must offer templates; form errors must preserve user input.
+
+Honest language: label estimated duration, model-generated suggestions, demo data and unverified assumptions clearly.
+
+Mobile-first: all primary forms, cards and share actions work on common mobile viewports.
+
+5.2 Proposed core screen inventory
+
+Screen
+
+Primary content
+
+Primary action
+
+Error/empty state
+
+S1 Landing
+
+Value proposition, two paths, workshop details.
+
+Improve my project / Find a project.
+
+Provide concise explanation and repeat CTA.
+
+S2 User profile
+
+Student/developer; target role; skills/time; branch where relevant.
+
+Continue.
+
+Inline validation; preserve selections.
+
+S3 Path A input
+
+GitHub URL and/or README/project description.
+
+Analyze project.
+
+URL fetch fail → paste README/description; clear retry option.
+
+S4 Loading
+
+Short progress messages such as “Preparing project context”.
+
+Cancel or return where safe.
+
+Timeout → provider retry/fallback.
+
+S5 Results
+
+Project makeover / three project cards, basis label, skills and roadmap.
+
+Choose/save/share; workshop CTA.
+
+Template-based fallback banner when relevant.
+
+S6 Registration
+
+Name, email, college, user type, selected project, eligibility where needed, consent.
+
+Register / continue to official form.
+
+Duplicate, invalid fields, service unavailable.
+
+S7 Confirmation
+
+Confirmation status and referral link.
+
+Copy / WhatsApp share / continue.
+
+If official handoff cannot be confirmed, say “Continue registration on NxtWave” rather than “Registered”.
+
+S8 Admin dashboard
+
+Eligible count, total demo count, source breakdown, daily trend, funnel.
+
+Filter/export if enabled.
+
+No data state; admin login required.
+
+6. Measurement and growth assumptions
+
+The app supports a seven-day acquisition plan; it does not itself guarantee registration volume. The campaign plan should use a small number of channels and measure registrations by source. Proposed starting allocation is a planning hypothesis and must be adjusted to actual constraints and NxtWave rules.
+
+Channel
+
+Illustrative registration target
+
+Execution principle
+
+College clubs / student representatives
+
+200
+
+Provide a ready-to-share invite, QR code and source-specific link; no unapproved rewards.
+
+WhatsApp student communities
+
+150
+
+Share only with admin permission or in relevant groups where promotion is permitted.
+
+Instagram / LinkedIn
+
+100
+
+Publish short project-makeover examples and track the links.
+
+Optional friend referrals
+
+50
+
+Allow users who are already registered to share a unique referral link.
+
+Total
+
+500
+
+Targets are hypotheses, not guaranteed outcomes.
+
+Budget item
+
+Planning amount
+
+Control
+
+Promotion of best-performing social post
+
+₹800
+
+Spend only after organic tests give a reasonable creative signal.
+
+Creative/QR materials
+
+₹300
+
+Prefer free design tools; keep receipts/assumptions in the plan.
+
+Printed campus materials / approved outreach support
+
+₹500
+
+Use only with permission and in line with campus rules.
+
+Contingency
+
+₹400
+
+Hold until a measured need appears.
+
+Total
+
+₹2,000
+
+Budget ceiling; not a requirement to spend all money.
+
+7. Acceptance criteria
+
+A user can complete either project path without creating an account.
+
+Path A works with a valid public GitHub repository where README retrieval is available, and also works with pasted README or a description if URL retrieval fails.
+
+Path B returns three recommendations from the curated catalogue even when both AI providers are unavailable.
+
+Gemini failure triggers a bounded Groq attempt; if both fail, the user sees fallback content with no broken screen.
+
+The result page includes a visible workshop CTA before registration is completed.
+
+Registration validation prevents duplicate normalized emails from incrementing registration totals.
+
+Referral progress updates only from new valid registration records; referral is not required to access or register for the workshop.
+
+Admin analytics distinguishes demo activity from production/official records and eligible final-year students from non-eligible users.
+
+No API key is sent to the browser. A non-admin cannot read the registration list or admin metrics.
+
+All required assessment deliverables can be demonstrated or explained without contacting students or executing the campaign.
+
+8. Scope boundaries, risks and assumptions
+
+Risk / assumption
+
+Impact
+
+Mitigation / boundary
+
+GitHub URL unavailable, private or rate-limited
+
+Path A cannot retrieve context.
+
+Offer paste README/description immediately; never demand repeated retries.
+
+Gemini/Groq unavailable or quota-limited
+
+AI result delay or failure.
+
+Bounded failover; deterministic project catalogue fallback; log provider status without logging secrets or full user text.
+
+AI invents repository details
+
+Misleading recommendations.
+
+Tell model it only saw supplied context; display evidence basis and caveat; do not claim full code analysis.
+
+Public README contains malicious prompt injection
+
+Model may follow untrusted embedded instructions.
+
+Treat repository text as untrusted data; system policy takes priority; do not execute code or URL instructions.
+
+Referral manipulation / duplicates
+
+Inflated registrations.
+
+Normalized email unique constraint, self-referral check, source attribution rules and rate limits.
+
+No official registration endpoint
+
+Prototype cannot confirm NxtWave registration.
+
+Use labelled demo mode or configure a supplied official URL; record outbound CTA click separately from completed registration.
+
+Student vs developer mismatch
+
+Wrong records may inflate student target.
+
+Track eligibility separately; count only self-reported/validated eligible final-year engineering students for target metrics.
+
+Scope creep under 48-hour deadline
+
+Core user journey remains incomplete.
+
+Freeze P0; do not add repository cloning, code execution, leaderboard, rewards or complex analytics.
+
+9. NxtWave assessment mapping
+
+Assignment requirement
+
+What Project DNA must produce
+
+Evidence to submit
+
+Understand the student
+
+Personas, project pain points, user inputs and motivation to register.
+
+Growth Plan slide/section and product rationale.
+
+Marketing campaign plan
+
+Prioritized channels, what to do, why it should work and route to 500.
+
+Maximum 5 slides or 2 pages. Include ₹2,000 and seven-day assumptions.
+
+Build one thing
+
+Working Project DNA flow with both paths, workshop CTA, optional referral and basic analytics.
+
+Live link, prototype or demo; label demo data.
+
+AI + learning notes
+
+2–3 examples in “What I asked → What AI suggested → What I changed” format.
+
+Short notes with real prompts and genuine decisions.
+
+3-minute video
+
+Explain approach, demo core flow and why scope was chosen.
+
+3-minute recorded demo.
+
+Reflection questions
+
+What changed; what another 24 hours would improve; what AI suggested but was rejected and why.
+
+Written answers and/or video coverage.
+
+10. Assumptions to verify before production
+
+The official workshop registration URL or endpoint is supplied and authorized before claiming that a registration was completed by NxtWave.
+
+Any use of the NxtWave name, logo, workshop statements or promotional material follows assessment and brand rules.
+
+AI provider keys and database credentials are available for deployment; otherwise the app runs in a labelled demo/template mode.
+
+Only minimal personal data is collected and no outreach is sent to friends or students by the app.

@@ -1,0 +1,737 @@
+PROJECT DNA
+
+Technical Requirements Document (TRD)
+
+Implementation architecture, APIs, data model, AI failover, security and deployment
+
+Document version
+
+1.0 — consolidated draft
+
+Purpose
+
+Build specification for the NxtWave Growth Intern challenge
+
+Assessment constraints
+
+48-hour submission window; ₹2,000 campaign budget; 7-day campaign; target 500 eligible student registrations
+
+Delivery mode
+
+AI-assisted prototype; campaign execution and contacting students are not required for the assessment
+
+Status
+
+Implementation-ready draft based on reviewed product decisions
+
+Scope note: this specification defines the proposed prototype and its boundaries. Real registration processing requires an approved NxtWave registration URL or integration and appropriate permission.
+
+
+NxtWave Growth Challenge • Draft specification • Page 
+
+PROJECT DNA  |  TRD
+
+Contents
+
+1. Architecture overview
+
+2. Technology choices
+
+3. Runtime flows
+
+4. AI provider abstraction and failover
+
+5. GitHub README ingestion and fallback
+
+6. Data model
+
+7. API contract
+
+8. Security and privacy
+
+9. Reliability, validation and observability
+
+10. Deployment and configuration
+
+11. Testing strategy
+
+12. Technical references
+
+
+NxtWave Growth Challenge • Draft specification • Page 
+
+PROJECT DNA  |  TRD
+
+1. Architecture overview
+
+The MVP uses a client-rendered React application with Supabase as the managed persistence and server-side execution layer. External AI and GitHub calls are made only from server-side functions. This avoids exposing provider secrets in the browser and reduces the number of services required in a 48-hour build.
+
+Architecture decision
+
+React + TypeScript + Vite + Tailwind CSS; Supabase Postgres for storage; Supabase Edge Functions for AI orchestration, URL retrieval, registration/referral validation and admin metrics; Gemini primary; Groq fallback; curated template fallback. [R5–R7]
+
+1.1 Logical component diagram
+
+Layer
+
+Component
+
+Responsibilities
+
+Presentation
+
+React + TypeScript + Tailwind
+
+Landing, path selection, inputs, results, registration, referral status and admin dashboard UI.
+
+Application API
+
+Supabase Edge Functions
+
+Validate requests, fetch allowed GitHub README content, orchestrate model fallback, normalize registrations, generate referral codes and return metrics.
+
+Persistence
+
+Supabase Postgres
+
+Project catalogue, project runs where explicitly saved, registrations, referral codes, event counts and admin role mapping.
+
+External providers
+
+Gemini, Groq, GitHub REST API
+
+Text generation, fallback text generation and bounded public README retrieval.
+
+Deployment
+
+Static frontend hosting + Supabase
+
+Frontend hosting, server-side functions, database policies, secret configuration and logs.
+
+1.2 Request flow
+
+Browser sends a small, validated request to an Edge Function; it never sends or receives provider secrets.
+
+For Path A, the function validates the repository URL against a strict GitHub allowlist and fetches the repository README using the GitHub API when feasible.
+
+If URL retrieval fails, the function returns a typed error code that the UI maps to an inline paste README/description fallback. It does not silently continue as if repository data had been read.
+
+The function prepares a bounded prompt and calls Gemini. On eligible provider failures, it calls Groq once. If both fail or output validation fails, it builds a response from curated project templates.
+
+The result is validated against the application schema before it is returned to the browser.
+
+Registration, referral counting and admin metrics are processed server-side under explicit database access rules.
+
+2. Technology choices
+
+Concern
+
+Choice
+
+Rationale / boundary
+
+Frontend
+
+React, TypeScript, Vite, Tailwind CSS
+
+Fast iteration in an AI-assisted code workflow; typed components and responsive styling.
+
+Database
+
+Supabase Postgres
+
+Relational uniqueness rules suit registrations and referral attribution.
+
+Server-side API
+
+Supabase Edge Functions (TypeScript)
+
+One server-side execution layer for LLM credentials, GitHub fetches and validation. Edge Functions support integrations and secret-backed calls. [R5, R8]
+
+AI provider 1
+
+Gemini API
+
+Primary generator, configured with an environment-specific model identifier. Rate limits depend on account/model tier. [R1, R2]
+
+AI provider 2
+
+Groq API
+
+Secondary generator used for failover; output must still be parsed and validated by the application. [R3]
+
+Repository context
+
+GitHub REST API for repository README
+
+Retrieve a single README at most; no cloning or whole-repository traversal in MVP. [R4]
+
+Charts
+
+A lightweight React chart library
+
+Only simple daily trend and channel count charts are required.
+
+Frontend hosting
+
+A static frontend host compatible with Vite
+
+Use any accessible deployment route supported by the chosen account. Document environment configuration.
+
+Authentication
+
+Admin-only authentication in MVP
+
+Visitors can use project guidance without an account; admin routes require authenticated admin access.
+
+3. Runtime flows
+
+3.1 Path A — URL or pasted description
+
+Browser submits `repoUrl` and profile context. The API accepts exactly one of `repoUrl`, `readmeText` or `projectDescription`, although a URL and short user note may be combined.
+
+When `repoUrl` is supplied, validate scheme is HTTPS, host is exactly `github.com`, path contains owner/repository and no embedded credentials. Redirects must not be followed to arbitrary hosts.
+
+Use the GitHub README endpoint for the repository. Decode supported content and strip binary/control content. Apply a strict read size and prompt size limit.
+
+If retrieval returns not found, private repository, unsupported URL, rate limit or timeout, respond with a machine-readable error such as `REPO_NOT_FOUND`, `REPO_PRIVATE_OR_UNAVAILABLE`, `GITHUB_RATE_LIMIT`, or `FETCH_TIMEOUT`. The UI preserves profile fields and exposes the paste fallback.
+
+If pasted input is used, skip network access entirely. Show the result basis as “Based on the README/project description you provided.”
+
+Call the provider adapter, validate the JSON response, return the result with a provenance label and non-guarantee disclaimer.
+
+3.2 Path B — Role-aligned project discovery
+
+Validate target role, experience, technology, interest, available time and student branch where applicable.
+
+Rank the curated catalogue by simple deterministic matches: role tags, skills, technology, difficulty and estimated time.
+
+Pass only a small set of candidates and user context to the AI provider to tailor concise summaries and roadmaps.
+
+Validate the result; if AI is unavailable, return the ranked catalogue entries and their authored descriptions.
+
+3.3 Registration and referral
+
+When an approved external registration URL exists, show the explicit handoff CTA and track the outbound click. Do not mark it complete without an approved callback or integration.
+
+If no official registration system is configured, internal registration is demo mode only. Mark all demo records as such; keep them distinct from production records.
+
+On a successful internal capture, insert a registration under a database uniqueness constraint for normalized email, assign a high-entropy referral code and capture only the allowed attribution fields.
+
+When a new registrant arrives through a referral link, validate the code, reject self-referral and duplicate records, and store the referral attribution atomically with the registration.
+
+Return aggregate progress, e.g. “1 of 3 referrals,” without exposing the email or identity of any referred student.
+
+4. AI provider abstraction and failover
+
+4.1 Provider interface
+
+Implement a provider-neutral interface, for example `generateProjectResult(input, schema)`, with adapters `GeminiProvider` and `GroqProvider`. Business logic must not depend on a provider-specific response object. Model identifiers, API base settings and timeouts are configuration, not hard-coded product logic.
+
+4.2 Recommended fallback policy
+
+Step
+
+Condition
+
+Action
+
+1. Validate
+
+Input missing/too long/invalid
+
+Return a user input error; do not call either model.
+
+2. Primary
+
+Valid request
+
+Call Gemini with bounded input and structured-output instructions.
+
+3. Classify failure
+
+Timeout, provider 429/rate limit, eligible 5xx, transport error, unusable/invalid output
+
+Record a sanitized failure code, then try Groq once.
+
+4. Secondary
+
+Groq available
+
+Generate the same output contract. Parse and validate locally regardless of provider output mode.
+
+5. Deterministic fallback
+
+Both providers fail, output invalid, or no key is configured
+
+Return curated templates and role/technology matches. Label as template-based rather than AI-generated.
+
+6. Telemetry
+
+Every attempt
+
+Record provider name, result status, elapsed time, fallback used and sanitized error class. Do not log API keys or full raw README/prompt text.
+
+4.3 Output contract
+
+Use a validated JSON object with these top-level fields: `mode` (improve_existing | discover_new), `basis` (github_readme | user_pasted_readme | user_description | curated_catalogue), `projectTitle`, `shortDescription`, `problemStatement`, `limitationsOrOpportunity` (array), `aiEnhancements` (array of objects with title, benefit, implementationHint), `technologies` (array), `difficulty` (beginner | intermediate | advanced), `estimatedDuration`, `roadmap` (ordered short steps), `skillsLearned` (array), `resumeBullet`, and `disclaimer`. For Path B, return `recommendations` with three project objects using the same basic card fields.
+
+4.4 Prompt design and output safety
+
+Treat GitHub README, pasted descriptions and user content as untrusted data. Instructions inside supplied repository text must not override application instructions.
+
+The AI must not claim it inspected code or features that were not provided to it.
+
+Require concise project ideas appropriate to the stated time window; label duration as an estimate.
+
+Ask the model not to produce secrets, exploit code, dangerous instructions or claims of guaranteed placement.
+
+Validate required fields and enum values. Escape rendered output and never render model output as raw HTML.
+
+Limit regeneration (for example, one re-generation per session in the assessment MVP) to control cost and prevent abuse.
+
+4.5 Model choice / quota notes
+
+Gemini account/model quotas can change with model and usage tier; Groq structured-output support varies by model and mode. Keep provider model names configurable and rely on local parsing/schema validation even when a provider offers structured output. Consult the current provider documentation at implementation time. [R1–R3]
+
+5. GitHub README ingestion and fallback
+
+Rule
+
+Requirement
+
+Allowed host
+
+`github.com` only; require HTTPS and parse owner/repository. No arbitrary URL fetch in MVP.
+
+Allowed content
+
+Repository-level README via official GitHub REST API, plus only basic public repository metadata where useful. No recursive file traversal.
+
+Fetch size
+
+Cap retrieved text; suggested initial limits are 64 KB raw README retrieval and 20 KB text passed to AI after normalization. Make limits configurable.
+
+Timeout
+
+Set a short bounded timeout (e.g. 5 seconds). Fail to paste fallback instead of leaving the UI in an indefinite loading state.
+
+Redirects
+
+Validate redirect destination; do not follow a redirect to a non-allowlisted host.
+
+Private / missing repo
+
+Explain that the repo may be private, unavailable or lack an accessible README. Offer paste README/description.
+
+Rate limit
+
+Show the paste fallback and optionally allow retry. Do not ask the user to create or submit a GitHub token for the MVP.
+
+No README
+
+Accept the user’s project description; do not attempt to inspect every source file.
+
+Prompt injection
+
+Treat retrieved text as untrusted reference material; never execute shell commands, install packages or obey instructions from repository content.
+
+Privacy
+
+Do not persist raw README by default. Store only generated result if user explicitly selects a save/share action; otherwise keep it session-scoped.
+
+The GitHub REST API provides a repository README endpoint and documents status codes such as not found and validation/rate-related failures. Implement the fallback for those cases rather than treating them as fatal application errors. [R4]
+
+6. Data model
+
+6.1 Tables
+
+Table
+
+Important fields
+
+Purpose / access rule
+
+project_catalog
+
+id, title, summary, problem, tags_role[], tags_technology[], tags_interest[], difficulty, duration_band, roadmap_json, active
+
+Seeded fallback catalogue; public read only for active items.
+
+project_runs
+
+id, session_id, mode, basis, input_summary_hash, selected_project_id nullable, result_json, provider_used, fallback_used, created_at
+
+Optional generated-result metadata. Avoid saving raw README/pasted project text by default. Keep retention bounded.
+
+registrations
+
+id, normalized_email UNIQUE, display_name, college, user_type, branch nullable, graduation_year/eligibility indicator, selected_project_id/title, source, utm_source, utm_medium, utm_campaign, referral_code_used nullable, data_mode, status, created_at
+
+Registration and source attribution. Private to authorized server/admin operations; never public-readable.
+
+referral_codes
+
+id, registration_id, code UNIQUE, created_at, active
+
+One code per successful registration; code is non-secret attribution identifier.
+
+referral_attributions
+
+id, referred_registration_id UNIQUE, referrer_registration_id, referral_code, created_at
+
+One attribution per registration. Reject self-referrals. Never expose referred users’ identity to the referrer.
+
+product_events
+
+id, session_id, event_name, source fields, path, mode, created_at, minimal_metadata_json
+
+Funnel measurement. Avoid PII; allow only documented event types.
+
+admin_users / role mapping
+
+auth_user_id, role, created_at
+
+Only authorized admins access metrics and registration records.
+
+6.2 Data rules
+
+Use unique constraints for normalized email and referral code, and for the referral attribution’s referred registration.
+
+Where possible, perform registration insert and referral attribution in one database transaction/RPC to avoid counter race conditions.
+
+Never use a browser-provided `is_admin` value as authorization. Admin role must be checked server-side/database-side.
+
+Demo records must have `data_mode=demo`; production/official records must be isolated and must never be mixed into the 500 target unless the official integration confirms their meaning.
+
+Dashboard aggregate queries should filter the correct campaign and eligible-student status, and should not silently combine developers, students of other years, and demo accounts.
+
+No address books, friend emails, phone numbers or outreach lists are collected for referrals.
+
+7. API contract
+
+These are logical endpoint contracts. The implementation may map them to Supabase Edge Function names, but the input/output semantics should remain stable.
+
+Endpoint
+
+Input
+
+Success response
+
+Key errors / notes
+
+POST /project/improve
+
+repoUrl OR readmeText OR projectDescription; userType; targetRole; experience; technology; interests; timeAvailable
+
+Validated project improvement object + basis/provider/fallback metadata.
+
+400 invalid input; 422 unsupported source; 429 rate limited; fallback result if both providers fail.
+
+POST /project/recommend
+
+userType; targetRole; experience; technology; interests; timeAvailable; branch for student
+
+Exactly three project recommendation cards.
+
+Return catalogue-based recommendations if AI fails.
+
+POST /registration
+
+name; email; college; userType; branch/year/eligibility as appropriate; selectedProject; source/UTMs; referralCode; consent; mode
+
+Status, registration id, referral link/code when internal capture is enabled.
+
+Duplicate email is handled idempotently; official handoff is not counted as complete without confirmation.
+
+GET /referrals/{code}/progress
+
+Referral code
+
+Aggregate total and progress toward 3.
+
+404/invalid code; no PII response; rate limit.
+
+POST /events
+
+session id; allowed event name; path; UTM/source; minimal metadata
+
+Accepted/ignored indicator.
+
+Validate event allowlist; never trust event payload to claim official registration.
+
+GET /admin/metrics
+
+Authenticated admin; date range/campaign filter
+
+Eligible registrations, demo registrations, daily counts, channel counts, funnel and referral counts.
+
+401 unauthenticated; 403 non-admin; never public.
+
+GET /projects/catalog
+
+Optional filters: role, technology, difficulty, time
+
+Active catalogue cards.
+
+Return cached/seeded data where AI service is unavailable.
+
+8. Security and privacy
+
+Keep `GEMINI_API_KEY`, `GROQ_API_KEY` and Supabase privileged credentials in server-side secrets only. Never commit them to source control or expose them in frontend bundles. [R5, R7]
+
+Enable Row Level Security on exposed tables, explicitly define grants and policies, and keep service-role credentials server-side. [R6]
+
+Validate every request on the server; client-side validation is usability only, not security.
+
+Use an allowlist for GitHub URL retrieval, cap request body size, enforce timeouts and do not fetch arbitrary hosts. This prevents the endpoint becoming an SSRF proxy.
+
+Rate-limit project generation by session/IP in a privacy-conscious way. Avoid logging raw email, full README text, prompts or API keys.
+
+Use output escaping; do not render AI-produced HTML, execute code, run package scripts or open user-supplied links automatically.
+
+Collect only data needed for registration, attribution and aggregate measurement. Show a concise privacy/consent notice and define a deletion contact/process before live deployment.
+
+Use environment separation for demo and production; do not accidentally point a demo front end at production registration storage.
+
+9. Reliability, validation and observability
+
+Failure
+
+Expected handling
+
+User message / action
+
+Telemetry
+
+GitHub unsupported URL
+
+Reject before fetch.
+
+“Use a public GitHub repository URL, or paste your README/project description.”
+
+`github_validation_failed` count.
+
+README 404/private/absent
+
+Return typed error.
+
+Paste README or project description; preserve all other selections.
+
+Error category only.
+
+GitHub rate limit / timeout
+
+Stop within bounded timeout.
+
+Continue with pasted text; optional retry.
+
+Latency/status category.
+
+Gemini timeout/429/5xx
+
+Try Groq once when configured.
+
+Keep loading state bounded.
+
+Provider status/latency.
+
+Groq also fails
+
+Use curated catalogue/template.
+
+“AI is temporarily unavailable; here is a template-based recommendation.”
+
+Fallback flag.
+
+Malformed LLM output
+
+Validate and fail over once; then template.
+
+Do not show broken raw JSON.
+
+Schema failure count.
+
+Duplicate registration
+
+Enforce DB unique constraint; return idempotent duplicate outcome.
+
+“This email already has a registration in this demo.”
+
+Duplicate count without plaintext email.
+
+Referral code invalid/self-referral
+
+Reject attribution, do not block registration.
+
+Registration succeeds; referral not attributed.
+
+Referral rejection category.
+
+Supabase unavailable
+
+Do not claim success if persistence failed.
+
+Explain retry; preserve inputs where possible.
+
+Service failure, no PII.
+
+External workshop registration not confirmed
+
+Record outbound CTA click only.
+
+“Continue on the official NxtWave registration page.”
+
+CTA click; no false completion event.
+
+10. Deployment and configuration
+
+10.1 Required configuration
+
+Variable / setting
+
+Purpose
+
+Rule
+
+VITE_SUPABASE_URL
+
+Frontend connection URL.
+
+Public project URL; no privileged secret.
+
+VITE_SUPABASE_ANON_KEY or publishable key
+
+Browser client access.
+
+Safe only with correct database grants/RLS; do not treat key as authorization.
+
+GEMINI_API_KEY
+
+Primary AI provider secret.
+
+Edge Function secret only.
+
+GEMINI_MODEL
+
+Primary model id.
+
+Set in deployment config; check account availability at build time.
+
+GROQ_API_KEY
+
+Secondary AI provider secret.
+
+Edge Function secret only.
+
+GROQ_MODEL
+
+Fallback model id.
+
+Set to a currently available model compatible with the required output contract.
+
+GITHUB_API_TOKEN (optional)
+
+Optional token for higher/controlled GitHub API quota if authorized.
+
+Do not require a student to provide their own token; keep server-side only.
+
+WORKSHOP_REGISTRATION_URL
+
+Approved official destination if provided.
+
+If absent, demo capture must be clearly labeled.
+
+APP_MODE
+
+demo or production.
+
+Server must decide mode; no browser-only toggle for production data.
+
+ADMIN_ALLOWLIST / role table
+
+Define admin authorization.
+
+Enforce server-side; never trust a frontend flag.
+
+10.2 Deployment checklist
+
+Build frontend and confirm there are no secret keys in the bundle.
+
+Apply database migrations and RLS policies; test with anon, ordinary and admin roles.
+
+Configure Gemini and Groq keys server-side; test primary success, primary failure, secondary success and both-fail fallback.
+
+Test GitHub success, unsupported URL, private/missing README, rate limit and paste fallback.
+
+Confirm demo/production data isolation and visible labels.
+
+Confirm registration, unique-email behavior, referral counting and admin authorization.
+
+Deploy to a public demo URL only after end-to-end checks; verify mobile responsiveness and share URLs.
+
+Prepare a seeded demo path that works even if AI providers have no quota at presentation time.
+
+11. Testing strategy
+
+Test group
+
+Cases
+
+Pass condition
+
+Unit
+
+URL parser, input limits, normalized email, referral rules, output schema, catalogue ranker.
+
+Deterministic cases pass without external services.
+
+Integration
+
+Edge Function to Gemini; Gemini failure to Groq; both fail to templates; Supabase writes.
+
+Each path returns valid schema and expected state.
+
+Security
+
+Non-admin reads metrics; malformed GitHub URLs; prompt injection in README; oversized inputs; secret scan.
+
+No unauthorized data, arbitrary host fetch, execution or secret exposure.
+
+E2E
+
+Path A with GitHub; Path A paste fallback; Path B; result CTA; demo registration; referral invite; admin metrics.
+
+All core paths finish without a dead end.
+
+Resilience
+
+Provider 429, timeout, malformed JSON, database outage and repeat submit.
+
+Clear state; no false success; no duplicate counts.
+
+UI
+
+Narrow mobile viewport, keyboard, focus, loading, empty/error states.
+
+Primary actions work and content remains readable.
+
+12. Technical references
+
+Implementation details and provider quotas change. Verify current model availability, rate limits, structured-output support and SDK recommendations when configuring the app.
+
+[R1] Gemini API reference
+
+[R2] Gemini API rate limits
+
+[R3] Groq structured outputs
+
+[R4] GitHub repository README REST API
+
+[R5] Supabase Edge Functions
+
+[R6] Supabase Row Level Security
+
+[R7] Supabase function secrets
+
+NxtWave Growth Challenge • Draft specificatio

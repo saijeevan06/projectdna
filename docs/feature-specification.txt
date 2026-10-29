@@ -1,0 +1,675 @@
+PROJECT DNA
+
+Feature Specification & Delivery Plan
+
+Feature-by-feature behavior, boundaries, milestones, failure modes and assessment deliverables
+
+Document version
+
+1.0 — consolidated draft
+
+Purpose
+
+Build specification for the NxtWave Growth Intern challenge
+
+Assessment constraints
+
+48-hour submission window; ₹2,000 campaign budget; 7-day campaign; target 500 eligible student registrations
+
+Delivery mode
+
+AI-assisted prototype; campaign execution and contacting students are not required for the assessment
+
+Status
+
+Implementation-ready draft based on reviewed product decisions
+
+Scope note: this specification defines the proposed prototype and its boundaries. Real registration processing requires an approved NxtWave registration URL or integration and appropriate permission.
+
+
+NxtWave Growth Challenge • Draft specification • Page 
+
+PROJECT DNA  |  FEATURES
+
+Contents
+
+1. Scope and priority model
+
+2. Detailed feature specifications
+
+3. Cross-feature user flows
+
+4. Failure modes and recovery
+
+5. Implementation phases and milestones
+
+6. Quality gates and acceptance tests
+
+7. NxtWave assessment deliverables and rules
+
+8. Definition of done
+
+
+NxtWave Growth Challenge • Draft specification • Page 
+
+PROJECT DNA  |  FEATURES
+
+1. Scope and priority model
+
+MVP principle
+
+The working asset is a conversion-focused project-guidance tool. The student value must be real, but repository processing and AI complexity stay bounded. The first version is complete when both paths, registration/demo state, optional referral and basic growth measurement work end-to-end.
+
+1.1 Priority definitions
+
+Priority
+
+Definition
+
+Rule
+
+P0 — Must ship
+
+Required to demonstrate the product thesis and support the assessment.
+
+Do not submit until core P0 journey works end-to-end.
+
+P1 — Should ship if stable
+
+Improves reliability or demonstration value without threatening P0.
+
+Only add after P0 acceptance tests pass.
+
+Out of scope
+
+Explicitly not building for this challenge.
+
+Do not start these items during the 48-hour window.
+
+1.2 Scope boundaries
+
+Path A fetches only public GitHub repository metadata/README when feasible. If it fails, the user pastes README or a description.
+
+Path B recommends from a small curated catalogue, with AI tailoring where available.
+
+Gemini is the primary provider; Groq is fallback. If both fail, deterministic templates maintain functionality.
+
+The workshop CTA is visible on the result page before registration. The user is not forced to register to see the main result.
+
+Referrals are optional. The three-friend goal is shown as an invitation, not a gate or condition of participation.
+
+Basic admin dashboard only: eligible/student vs demo counts, daily counts, channel counts, simple funnel and referral count.
+
+No full repository analysis, code execution, automated code changes, advanced public college leaderboard, ambassador rewards/endorsements or complex analytics.
+
+No real campaign execution, contacting students or claims of achieved registrations as part of the simulation.
+
+2. Detailed feature specifications
+
+F-01 — Landing page and product entry (P0)
+
+Purpose: explain value and provide two clear paths. UI: concise hero; “Improve my project” and “Find a project for my role”; workshop banner; concise privacy/AI note. Logic: source/UTM captured at first landing. Acceptance: a first-time visitor can identify both paths and the workshop within a few seconds; mobile layout usable. Failure: if source params missing, classify as direct/unknown rather than inventing a channel.
+
+F-02 — User type and profile (P0)
+
+Purpose: tailor recommendations without over-questioning. Fields: Student/Developer; target role; experience; technology preference; interests; available time; branch for students; optional current role. Final-year eligibility/year is captured if campaign reporting is to count eligible students. Acceptance: path-specific fields; client + server validation; back navigation retains inputs. Failure: missing optional fields use “not specified” rather than making up a preference.
+
+F-03 — Path A — GitHub URL input (P0)
+
+Purpose: reduce typing for users with a public repo. Accept HTTPS github.com/{owner}/{repo}. Fetch only README/basic public metadata server-side. Acceptance: valid repo with readable README reaches generation; unsupported URL is rejected before fetch. Failure: no README/private/rate limit/timeout presents paste fallback and preserves profile information.
+
+F-04 — Path A — Paste README/description (P0)
+
+Purpose: ensure URL failure does not block progress. Provide tabs or a clear alternative input: README text or project description. Validate input length and require a non-empty description if URL import failed. Acceptance: pasted content can complete the same result journey without a URL. Failure: empty/oversized text gets an inline message and no provider call.
+
+F-05 — Project context normalizer (P0)
+
+Purpose: prepare a compact and safe input. Extract repository title, README text and limited metadata; trim repeated whitespace and cap payload length. Do not traverse all files. Acceptance: output includes a `basis` field. Failure: if no usable context remains, ask for description or return catalogue alternative.
+
+F-06 — AI provider chain (P0)
+
+Purpose: resilient project guidance. Gemini primary; on eligible timeout, 429, 5xx or invalid output, attempt Groq once; if Groq fails, return curated fallback. Acceptance: test primary success, primary failure/secondary success, both fail. Failure: no infinite retry; no raw provider error or key exposed.
+
+F-07 — Path A makeover result (P0)
+
+Purpose: show useful AI improvement ideas. Fields: project title, short summary, limitations/opportunities, 3–5 AI enhancements, technology suggestions, difficulty, estimated time, roadmap, skills learned, sample resume bullet, basis/disclaimer. Acceptance: output fits the user’s time and target role; explicit that ideas are proposed, not implemented. Failure: invalid model output is discarded and retried/fallbacked.
+
+F-08 — Path B role-aligned project recommendations (P0)
+
+Purpose: help users without a suitable existing project. Use simple matching against a curated catalogue and target role/time/technology, then tailor descriptions through the provider chain when available. Show three recommendations. Acceptance: catalogue fallback works offline from providers. Failure: no exact match uses nearest tagged options and explains that they are alternatives.
+
+F-09 — Project cards and sharing (P0)
+
+Purpose: make results memorable and shareable. Cards include title, problem, outcome, technologies, difficulty, time, skills and short roadmap. Provide copy/share link or downloadable/shareable representation if feasible. Acceptance: user can select a recommendation and see workshop CTA. Failure: share image generation failure falls back to text/link sharing.
+
+F-10 — Workshop CTA and registration (P0)
+
+Purpose: primary conversion. CTA visible on results page, before user is forced to register. If official URL is configured, hand off and track click; if not, internal capture is demo-only. Suggested fields: name, email, college, user type, selected project; branch/year for eligibility reporting; consent. Acceptance: clear success/next step and no duplicate count. Failure: do not say officially registered without an authoritative success signal.
+
+F-11 — Campaign eligibility and event tracking (P0)
+
+Purpose: accurately measure the 500 final-year engineering student target. Record allowed events: landing, path start, result, CTA click, registration form start, saved registration and referral registration. Capture UTM/source fields. Acceptance: counts distinguish eligible, non-eligible and demo records. Failure: missing source becomes “direct/unknown”; an outbound click is not a completed registration.
+
+F-12 — Unique optional referral (P0)
+
+Purpose: support organic distribution without blocking the main objective. Issue a unique referral URL after successful internal/demo registration; show progress toward three. Copy and WhatsApp share intent. Acceptance: new valid registration attributes to a valid code; duplicate/self-referrals do not increment. Failure: invalid code does not prevent the new student registration.
+
+F-13 — Basic admin dashboard (P0)
+
+Purpose: check the acquisition funnel. Show eligible registrations vs 500, total demo/non-eligible separately, daily counts, channel source counts, path starts/results, CTA clicks and referral-sourced registrations. Acceptance: admin authentication; metrics agree with stored test records. Failure: empty state shown for no data; never publish registration identities.
+
+F-14 — Admin CSV export / filters (P1)
+
+Purpose: make review easier. Export approved fields and simple date/source filters. Acceptance: admin-only, excludes unnecessary sensitive details. Failure: if not stable, show dashboard only; CSV export is not required for P0.
+
+F-15 — Enhanced recommendation rerun (P1)
+
+Purpose: allow a limited second version for user control. Limit re-generation per session and show why it changed. Acceptance: rate limit works and failures preserve previous result. Failure: use previous result or template if quota is exhausted.
+
+F-16 — Saved result / share page (P1)
+
+Purpose: enable persistent sharing after the session. Store only when user explicitly saves or shares. Acceptance: share token exposes only the intended project card. Failure: if persistent save takes too long, support copy/download and skip accounts.
+
+3. Cross-feature user flows
+
+3.1 Existing project flow
+
+Landing → Student/Developer → Improve my project → GitHub URL → [successful README fetch OR paste README/description fallback] → role/context form → bounded generation (Gemini → Groq → template) → project makeover result with basis label → workshop CTA → registration/official handoff → confirmation when supported → optional referral link.
+
+3.2 New project flow
+
+Landing → Student/Developer → Find a project → role/branch/technology/experience/interest/time form → catalogue matching → AI tailoring if available → three project cards → select/read/share a card → workshop CTA → registration/official handoff → optional referral link.
+
+3.3 Referral flow
+
+Registration success → create referral code and link → show “Invite three friends (optional)” with copy/WhatsApp share → friend opens link → code captured → friend completes a new valid registration → attribution stored once → referrer sees aggregate progress. No friend names/emails are shown to the referrer; referral progress never gates workshop access.
+
+3.4 Admin flow
+
+Admin sign-in → server-side role check → choose date range/campaign → see eligible student registrations separately from demo and other users → inspect daily/channel/funnel/referral aggregates → optionally export approved data if P1 is completed.
+
+4. Failure modes and recovery
+
+Scenario
+
+System behavior
+
+UI behavior
+
+Do not do
+
+GitHub URL invalid or not GitHub
+
+Reject before request; typed error.
+
+Prompt for a public GitHub URL or paste project description.
+
+Do not fetch arbitrary hosts.
+
+GitHub repo is private/deleted/no README
+
+End request; keep user context.
+
+Offer paste README/description; do not make user restart.
+
+Do not ask for personal GitHub tokens.
+
+Readme too large or rate-limited
+
+Stop at configured size/time; return fallback.
+
+Explain URL reading failed; paste a shorter README or description.
+
+Do not clone or crawl the repository.
+
+Gemini fails
+
+Try Groq once if configured.
+
+Keep one loading state; no provider details.
+
+Do not retry forever.
+
+Groq also fails
+
+Use deterministic catalogue/template.
+
+Label output “Template-based suggestion; AI temporarily unavailable.”
+
+Do not show blank or invalid JSON.
+
+AI claims it inspected source files
+
+Schema/prompt guardrail plus basis label.
+
+Describe only the material actually received.
+
+Do not claim full repository analysis.
+
+AI output too generic or mismatched
+
+Check role/time fit; try bounded fallback/template.
+
+Offer change in role/time inputs or use curated alternative.
+
+Do not promise resume or placement results.
+
+Registration duplicate
+
+DB uniqueness; idempotent result.
+
+State already registered in this demo or direct to official flow as appropriate.
+
+Do not increment the target twice.
+
+Referral code invalid/self-referral
+
+Reject referral attribution only.
+
+Allow independent registration to proceed.
+
+Do not block workshop registration.
+
+Database write fails
+
+Return failure and preserve form.
+
+Say registration could not be saved; retry.
+
+Do not show confirmation or referral link.
+
+External registration link configured but no callback
+
+Track CTA click only.
+
+Say “Continue on the official registration page.”
+
+Do not count click as confirmed registration.
+
+No visitors/low registrations
+
+Dashboard shows actual low numbers and channel data.
+
+Internal only; revise campaign/channel plan.
+
+Do not fabricate data to reach 500.
+
+Demo data mixed with real data
+
+Enforce server-side mode separation/filtering.
+
+Show demo banner and distinct counts.
+
+Do not report demo rows as NxtWave registrations.
+
+5. Implementation phases and milestones
+
+Time budget: 48 hours to submit, not a requirement to build every optional feature. Keep P0 small. Suggested schedule is a guardrail; adjust based on real build progress and Antigravity quota.
+
+Phase / timebox
+
+Build tasks
+
+Exit gate
+
+Phase 0 — Plan and scaffold (Hours 0–3)
+
+Create repository; React/TypeScript/Tailwind; Supabase project/environment; route skeleton; README and `.env.example`; seed demo data.
+
+App starts locally; secrets excluded; initial screen visible.
+
+Phase 1 — Student UX (Hours 3–9)
+
+Landing; user type; path selection; student/developer fields; Path A URL + paste fallback; Path B profile form; validation and mobile styles.
+
+Both paths reach a valid request state; fields persist across back navigation.
+
+Phase 2 — Project result (Hours 9–17)
+
+GitHub README fetch; curated catalogue; Gemini adapter; Groq adapter; schema validation; provider chain; result cards and basis labels.
+
+Successful results on both paths; both-provider-fail fallback works.
+
+Phase 3 — Conversion & referral (Hours 17–24)
+
+Workshop CTA visible on result; approved URL config or internal demo registration; unique email; eligible-student distinction; referral code/link and aggregate progress.
+
+Duplicate/self-referral test passes; demo state is explicit; no false official success.
+
+Phase 4 — Growth dashboard (Hours 24–30)
+
+Admin auth/RLS; eligible vs demo counts; daily registrations; channel counts; basic funnel and referral totals.
+
+Metrics match seeded records; non-admin cannot read them.
+
+Phase 5 — QA/deploy (Hours 30–38)
+
+Test failure cases; UI responsive checks; secrets scan; deploy; test on public URL; prepare fallback demo data.
+
+All P0 acceptance tests pass; live link or stable prototype available.
+
+Phase 6 — Submission assets (Hours 38–48)
+
+Create growth plan within max 5 slides/2 pages; capture 2–3 AI learning notes; record 3-minute video; answer reflection questions; final smoke test.
+
+All NxtWave assessment deliverables ready; no unsupported claims.
+
+5.1 Stop-work / scope-control rule
+
+Protect the deadline
+
+If the build is behind schedule, stop P1 features. Keep the curated template fallback, both paths, visible workshop CTA, honest registration state, optional referral link and basic metrics. Do not begin full repo analysis, code execution, leaderboard, rewards or complex analytics.
+
+6. Quality gates and acceptance tests
+
+Test ID
+
+Test
+
+Expected result
+
+AT-01
+
+Student starts Path A with valid public GitHub README.
+
+Result basis identifies GitHub README; recommendation generated and schema valid.
+
+AT-02
+
+GitHub URL fails and user pastes README.
+
+The same flow completes without restarting.
+
+AT-03
+
+User pastes only a plain-language project description.
+
+Result generated with `user_description` basis.
+
+AT-04
+
+Gemini succeeds.
+
+Valid structured output displayed.
+
+AT-05
+
+Gemini fails and Groq succeeds.
+
+Groq result displayed and fallback logged.
+
+AT-06
+
+Both providers fail or keys are absent.
+
+Curated template result displayed with visible fallback label.
+
+AT-07
+
+Path B with a role, experience and time window.
+
+Three relevant catalogue/AI-tailored projects displayed.
+
+AT-08
+
+User sees results without registering.
+
+Result visible and workshop CTA is discoverable.
+
+AT-09
+
+User submits a valid internal registration in demo mode.
+
+Demo confirmation and optional referral link displayed; dashboard labels record demo.
+
+AT-10
+
+Same normalized email submits twice.
+
+Unique registration count does not increase twice.
+
+AT-11
+
+Friend uses a referral link and completes new registration.
+
+Referral aggregate increments once; no identity is exposed.
+
+AT-12
+
+Friend submits an invalid referral code.
+
+Registration still succeeds; no attribution is counted.
+
+AT-13
+
+Non-admin requests metrics endpoint.
+
+Access denied.
+
+AT-14
+
+Admin views dashboard with mixed demo/eligible data.
+
+Separate counts and filters prevent misleading totals.
+
+AT-15
+
+Workshop is represented by an external destination without callback.
+
+CTA click tracked, but dashboard does not mark completion.
+
+AT-16
+
+Phone-sized viewport.
+
+Forms, cards, CTA and share controls remain usable.
+
+7. NxtWave assessment deliverables and rules
+
+Assessment constraint
+
+The NxtWave challenge is a simulation. The task explicitly says there is no need to contact students or execute the campaign. Show a working asset and a realistic plan; never imply simulated registrations are real outcomes.
+
+Required deliverable
+
+Limit / format
+
+Definition of ready
+
+1. Growth Plan
+
+Maximum 5 slides or 2 pages.
+
+Identifies exact target student, why they care, why they would register, prioritized channels, what to do, why it should work, path to 500, ₹2,000 budget and seven-day activity plan.
+
+2. Working Asset
+
+Live link / prototype / demo.
+
+Demonstrates Project DNA core journey: path selection, result, workshop CTA, demo/approved registration state, optional referral, basic growth metrics.
+
+3. AI + Learning Notes
+
+2–3 examples.
+
+Each shows: “What I asked → What AI suggested → What I changed.” Use real prompts and honest decisions from the build; do not fabricate the learning record.
+
+4. Three-minute video
+
+3 minutes.
+
+Explain the problem, show both paths or the strongest end-to-end path, show result→workshop CTA→referral, explain tracking/fallback and scope decisions.
+
+7.1 Assessment rules and evaluation criteria
+
+The submission window is 48 hours. The plan describes a seven-day campaign; these are different clocks and must not be conflated.
+
+The campaign budget ceiling is ₹2,000 and the registration target is 500 final-year engineering students.
+
+The challenge is a simulation: there is no requirement to contact students or execute the real campaign.
+
+Any AI tools may be used. The assessment focuses on what the candidate can learn, build, decide and ship—not merely which tools they know.
+
+The Growth Plan is limited to a maximum of 5 slides or 2 pages. The working asset must be a live link, prototype or demo. AI + Learning Notes must contain 2–3 genuine examples. The video is 3 minutes.
+
+Keep all performance claims honest: simulated registrations, assumed channel conversion and test results must be labelled as such.
+
+Evaluation criterion
+
+What the reviewer wants to see
+
+Evidence in Project DNA
+
+Learnability
+
+Can the candidate learn and improve quickly?
+
+Real AI prompt/response/change notes; documented response to provider or GitHub failures.
+
+Ownership
+
+Can the candidate take an unclear problem and move it forward?
+
+End-to-end working student flow and clear scope choices, not just an idea or static mockup.
+
+Intent to grow
+
+Does the candidate actively seek to improve?
+
+Honest reflection on what changed and what would be improved with another 24 hours.
+
+Bias to ship
+
+Can the candidate turn an idea into something demonstrable?
+
+Deployed or runnable prototype with a reliable template fallback and tested registration/referral path.
+
+Problem solving and judgment
+
+Can the candidate make sound decisions with AI available?
+
+Reasoned decisions about bounded GitHub fetching, fallback providers, data honesty, privacy and features deliberately excluded.
+
+7.2 Reflection questions that must be answered
+
+What changed between your first idea and final solution?
+
+If you had another 24 hours, what would you improve?
+
+What did AI suggest that you rejected and why?
+
+What did AI suggest while building that you deliberately rejected, and why? (Keep this answer concrete and tie it to product scope, reliability, budget, user value or assessment constraints.)
+
+7.3 Growth plan requirements
+
+Target: 500 final-year engineering student registrations, over seven days, with ₹2,000 budget.
+
+Prioritize a small set of channels: college clubs/student representatives, relevant WhatsApp communities, Instagram/LinkedIn and optional referrals.
+
+Show expected registrations per channel as hypotheses, not guarantees. Show the daily cumulative target and channel/source tracking.
+
+Do not depend entirely on referrals; the target is obtainable only if the acquisition channels bring enough relevant visitors.
+
+One illustrative distribution for planning is 200 college clubs/representatives, 150 WhatsApp communities, 100 social posts and 50 optional referrals; revise based on evidence.
+
+One illustrative spend plan is ₹800 promotion, ₹300 creative/QR materials, ₹500 permitted campus materials/outreach support and ₹400 contingency. Free channels should be the default, and no unapproved rewards are offered.
+
+8. Definition of done
+
+The user can complete Path A from either public GitHub README or pasted README/project description.
+
+The user can complete Path B and receive three role/time-relevant project suggestions.
+
+Gemini→Groq→template fallback works and output is schema-validated.
+
+The results page shows project value and an obvious NxtWave workshop CTA without a registration wall.
+
+Registration state is honest (official confirmed integration versus demo capture is clearly distinguished).
+
+Referral sharing is optional, progress is aggregate-only, and duplicates do not inflate counts.
+
+Basic growth metrics separate campaign-eligible final-year engineering student records from developers, non-eligible users and demo data.
+
+Security checks show no exposed keys or public access to registration/admin tables.
+
+P0 end-to-end and failure acceptance tests pass on the deployed prototype.
+
+The four NxtWave submission deliverables and reflection answers are ready.
+
+Appendix A — AI + learning notes template
+
+Example
+
+What I asked
+
+What AI suggested
+
+What I changed / why
+
+1
+
+[Paste real prompt]
+
+[Summarize actual output]
+
+[Your actual decision and rationale]
+
+2
+
+[Paste real prompt]
+
+[Summarize actual output]
+
+[Your actual decision and rationale]
+
+3 (optional)
+
+[Paste real prompt]
+
+[Summarize actual output]
+
+[Your actual decision and rationale]
+
+Appendix B — Three-minute video outline
+
+Time
+
+Talking point
+
+0:00–0:25
+
+Student pain point and why a generic registration link is not enough.
+
+0:25–1:15
+
+Demonstrate Path A (GitHub or paste fallback) and the AI makeover result. If time permits, show Path B.
+
+1:15–1:50
+
+Show the visible workshop CTA, demo/approved registration state and optional referral link.
+
+1:50–2:25
+
+Show basic growth metrics and explain source tracking / target eligibility.
+
+2:25–3:00
+
+Explain Gemini→Groq→template fallback, what was deliberately excluded, what changed during the build and next improvement.
+
+Technical references
+
+These references support implementation details. Verify current model availability, quotas, SDK recommendations and account limits at implementation time; do not hard-code model IDs into product logic.
+
+[R1] Google Gemini API reference
+
+[R2] Gemini API rate limits
+
+[R3] Groq structured outputs
+
+[R4] GitHub REST API — repository README
+
+[R5] Supabase Edge Functions
+
+[R6] Supabase Row Level Security
+
+[R7] Supabase function secrets
