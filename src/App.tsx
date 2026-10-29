@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles } from 'lucide-react'
 import type { Profile } from './types'
 import { projectCatalogue, recommendProjects, type ProjectIdea } from './data/projects'
 import { buildMakeover, type Makeover } from './lib/makeover'
 import { fetchGitHubMakeover, hasProjectFunctionConfig, isValidGitHubRepoUrl, ProjectApiError } from './lib/projectApi'
 import { fetchProjectRecommendations, type RecommendationResult } from './lib/recommendationApi'
+import { getWorkshopUrl, saveDemoRegistration, trackProjectEvent, type DemoRegistrationStatus, type RegistrationDraft, type RegistrationPath } from './lib/registrationApi'
 
 type Path = 'improve' | 'discover' | null
 
@@ -29,6 +30,12 @@ function App() {
   const [fallbackNotice, setFallbackNotice] = useState('')
   const [generating, setGenerating] = useState(false)
   const [recommendationResult, setRecommendationResult] = useState<RecommendationResult | null>(null)
+  const [registrationOpen, setRegistrationOpen] = useState(false)
+  const [registrationStatus, setRegistrationStatus] = useState<DemoRegistrationStatus | null>(null)
+  const [registrationError, setRegistrationError] = useState('')
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+
+  useEffect(() => { void trackProjectEvent('landing') }, [])
 
   function startPath(nextPath: Exclude<Path, null>) {
     setPath(nextPath)
@@ -38,6 +45,8 @@ function App() {
     setMakeover(null)
     setFallbackNotice('')
     setRecommendationResult(null)
+    setSelectedProjectId(null)
+    void trackProjectEvent('path_start', nextPath)
     setGithubUrl('')
     setProjectDescription('')
     setTargetRole('')
@@ -100,9 +109,41 @@ function App() {
       })
     } finally {
       setStep('results')
+      void trackProjectEvent('result', 'discover')
       setGenerating(false)
     }
   }
+
+  function handleWorkshopClick() {
+    const pathValue = path === 'improve' ? 'improve' : path === 'discover' ? 'discover' : 'unknown'
+    void trackProjectEvent('workshop_cta_click', pathValue)
+    const destination = getWorkshopUrl()
+    if (destination) {
+      window.open(destination, '_blank', 'noopener,noreferrer')
+      return
+    }
+    setRegistrationStatus(null)
+    setRegistrationError('')
+    setRegistrationOpen(true)
+    void trackProjectEvent('registration_form_start', pathValue)
+  }
+
+  async function handleDemoRegistration(draft: RegistrationDraft) {
+    setRegistrationError('')
+    try {
+      const status = await saveDemoRegistration(draft)
+      setRegistrationStatus(status)
+    } catch (caught) {
+      const code = caught instanceof Error ? caught.message : 'REGISTRATION_SAVE_FAILED'
+      setRegistrationError(code === 'REGISTRATION_SERVICE_UNAVAILABLE'
+        ? 'The demo registration service is not connected. Your details were not submitted.'
+        : 'We could not save this demo registration. Your details were not counted; please try again later.')
+    }
+  }
+
+  const selectedProject = path === 'improve'
+    ? makeover?.title || ''
+    : projectCatalogue.find((project) => project.id === selectedProjectId)?.title || ''
 
   async function runMakeover(usePasteOnly = false) {
     setGenerating(true)
@@ -123,12 +164,14 @@ function App() {
         setFallbackNotice(notice)
       }
       setStep('results')
+      void trackProjectEvent('result', 'improve')
     } catch (caught) {
       const code = caught instanceof ProjectApiError ? caught.code : 'FUNCTION_UNAVAILABLE'
       if (projectDescription.trim()) {
         setMakeover(buildMakeover(projectDescription, profile, 'Based on the project text you provided.'))
         setFallbackNotice(`${readableRepoError(code)} This template suggestion uses only the project text you pasted.`)
         setStep('results')
+        void trackProjectEvent('result', 'improve')
       } else {
         setError(readableRepoError(code))
         setStep('fallback')
@@ -236,21 +279,30 @@ function App() {
               <p className="privacy-note">No repository is cloned, crawled or executed. The template uses only the text you paste.</p>
             </>}
 
-            {step === 'results' && path === 'discover' && <Recommendations role={targetRole} profile={profile} tailoring={recommendationResult} onEdit={() => changeStep('profile')} />}
-            {step === 'results' && path === 'improve' && makeover && <MakeoverResults makeover={makeover} notice={fallbackNotice} onEdit={() => changeStep('summary')} />}
+            {step === 'results' && path === 'discover' && <Recommendations role={targetRole} profile={profile} tailoring={recommendationResult} selectedProjectId={selectedProjectId} onSelect={setSelectedProjectId} onWorkshop={handleWorkshopClick} onEdit={() => changeStep('profile')} />}
+            {step === 'results' && path === 'improve' && makeover && <MakeoverResults makeover={makeover} notice={fallbackNotice} onWorkshop={handleWorkshopClick} onEdit={() => changeStep('summary')} />}
           </div>
         </section>
       )}
 
       <footer className="site-footer" id="workshop">
         <div><span className="footer-burst">✳</span><span><b>Build Your First AI Project</b> <i>·</i> A free, 60-minute workshop</span></div>
-        <a href="#workshop">Save your spot <ArrowUpRight size={15} /></a>
+        <button className="footer-action" onClick={handleWorkshopClick}>Workshop next step <ArrowUpRight size={15} /></button>
       </footer>
+      {registrationOpen && <RegistrationDialog
+        profileBranch={profile.branch}
+        registrationStatus={registrationStatus}
+        registrationError={registrationError}
+        selectedProject={selectedProject}
+        path={path === 'improve' ? 'improve' : path === 'discover' ? 'discover' : 'unknown'}
+        onClose={() => setRegistrationOpen(false)}
+        onSubmit={handleDemoRegistration}
+      />}
     </main>
   )
 }
 
-function Recommendations({ role, profile, tailoring, onEdit }: { role: string; profile: Profile; tailoring: RecommendationResult | null; onEdit: () => void }) {
+function Recommendations({ role, profile, tailoring, selectedProjectId, onSelect, onWorkshop, onEdit }: { role: string; profile: Profile; tailoring: RecommendationResult | null; selectedProjectId: string | null; onSelect: (id: string) => void; onWorkshop: () => void; onEdit: () => void }) {
   const rankedProjects = recommendProjects(profile, role)
   const remoteProjects = tailoring?.projects.map((item) => projectCatalogue.find((project) => project.id === item.id)).filter((project): project is ProjectIdea => Boolean(project)) || []
   const projects = remoteProjects.length === 3 ? remoteProjects : rankedProjects
@@ -261,14 +313,14 @@ function Recommendations({ role, profile, tailoring, onEdit }: { role: string; p
     <p className="hero-description">Ideas for a <b>{role}</b> path, shaped around {profile.time.toLowerCase()}, {profile.technology === 'No preference' ? 'any technology' : profile.technology}, and your interests.</p>
     <div className="catalogue-note"><Sparkles size={15} /> {providerLabel} · Catalogue projects preserved</div>
     {tailoring?.providerNote && <div className="basis-note">{tailoring.providerNote}</div>}
-    <div className="recommendation-list">{projects.map((project, index) => <ProjectCard key={project.id} project={project} tailoring={tailoring?.projects.find((item) => item.id === project.id)} index={index + 1} />)}</div>
-    <div className="results-workshop"><div><b>Keep building with us</b><span>Join the free 60-minute AI project workshop.</span></div><a href="#workshop">Workshop info <ArrowUpRight size={14} /></a></div>
+    <div className="recommendation-list">{projects.map((project, index) => <ProjectCard key={project.id} project={project} tailoring={tailoring?.projects.find((item) => item.id === project.id)} selected={selectedProjectId === project.id} onSelect={() => onSelect(project.id)} index={index + 1} />)}</div>
+    <ResultsWorkshop onClick={onWorkshop} />
     <button className="text-button" onClick={onEdit}><ArrowLeft size={14} /> Edit your answers</button>
   </>
 }
 
-function ProjectCard({ project, tailoring, index }: { project: ProjectIdea; tailoring?: { tailoredSummary?: string; roadmap: string[] }; index: number }) {
-  return <article className="recommendation-card">
+function ProjectCard({ project, tailoring, selected, onSelect, index }: { project: ProjectIdea; tailoring?: { tailoredSummary?: string; roadmap: string[] }; selected: boolean; onSelect: () => void; index: number }) {
+  return <article className={`recommendation-card ${selected ? 'selected-card' : ''}`}>
     <div className="recommendation-topline"><span>PROJECT 0{index}</span><span>{project.difficulty} · {project.time}</span></div>
     <h2>{project.title}</h2>
     <p className="project-problem">{project.problem}</p>
@@ -276,6 +328,7 @@ function ProjectCard({ project, tailoring, index }: { project: ProjectIdea; tail
     <div className="project-outcome"><small>WHAT YOU’LL MAKE</small><p>{project.outcome}</p></div>
     <div className="project-tags">{project.technologies.map((technology) => <span key={technology}>{technology}</span>)}</div>
     <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{(tailoring?.roadmap || project.roadmap).map((step) => <li key={step}>{step}</li>)}</ol></div></div>
+    <button className={`select-project ${selected ? 'selected' : ''}`} onClick={onSelect}>{selected ? 'Selected for the workshop' : 'Choose this project'}{selected && <Check size={14} />}</button>
   </article>
 }
 
@@ -293,7 +346,7 @@ function readableRepoError(code: string) {
   return messages[code] || 'We could not read that README. Paste it or describe the project to continue.'
 }
 
-function MakeoverResults({ makeover, notice, onEdit }: { makeover: Makeover; notice: string; onEdit: () => void }) {
+function MakeoverResults({ makeover, notice, onWorkshop, onEdit }: { makeover: Makeover; notice: string; onWorkshop: () => void; onEdit: () => void }) {
   return <>
     <div className="eyebrow"><span className="eyebrow-dot" /> PROJECT MAKEOVER · {makeover.provider.toUpperCase()}</div>
     <h1>{makeover.title}<br /><span className="serif-accent">next moves.</span></h1>
@@ -306,9 +359,75 @@ function MakeoverResults({ makeover, notice, onEdit }: { makeover: Makeover; not
     <section className="makeover-section"><h2>Skills you could practice</h2><div className="project-tags">{makeover.skills.map((item) => <span key={item}>{item}</span>)}</div></section>
     <section className="resume-note"><small>POTENTIAL RESUME BULLET · EDIT AFTER YOU BUILD IT</small><p>{makeover.resumeBullet}</p></section>
     <p className="makeover-disclaimer">{makeover.disclaimer}</p>
-    <div className="results-workshop"><div><b>Keep building with us</b><span>Join the free 60-minute AI project workshop.</span></div><a href="#workshop">Workshop info <ArrowUpRight size={14} /></a></div>
+    <ResultsWorkshop onClick={onWorkshop} />
     <button className="text-button" onClick={onEdit}><ArrowLeft size={14} /> Edit project context</button>
   </>
+}
+
+function ResultsWorkshop({ onClick }: { onClick: () => void }) {
+  const official = Boolean(getWorkshopUrl())
+  return <div className="results-workshop"><div><b>Keep building with us</b><span>{official ? 'Continue to the configured workshop registration page.' : 'Open the clearly labeled demo registration flow.'}</span></div><button onClick={onClick}>{official ? 'Open registration' : 'Register (demo)'} <ArrowUpRight size={14} /></button></div>
+}
+
+function RegistrationDialog({ profileBranch, registrationStatus, registrationError, selectedProject, path, onClose, onSubmit }: {
+  profileBranch: string
+  registrationStatus: DemoRegistrationStatus | null
+  registrationError: string
+  selectedProject: string
+  path: RegistrationPath
+  onClose: () => void
+  onSubmit: (draft: RegistrationDraft) => Promise<void>
+}) {
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [college, setCollege] = useState('')
+  const [userType, setUserType] = useState<'student' | 'developer'>('student')
+  const [branch, setBranch] = useState(profileBranch || '')
+  const [finalYear, setFinalYear] = useState('')
+  const [consent, setConsent] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const backendReady = hasProjectFunctionConfig()
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true)
+    await onSubmit({
+      fullName,
+      email,
+      college,
+      userType,
+      branch: userType === 'student' ? branch : null,
+      finalYearEngineering: userType === 'student' ? finalYear === 'yes' : null,
+      selectedProject,
+      consent,
+      path,
+    })
+    setBusy(false)
+  }
+
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <section className="registration-dialog" role="dialog" aria-modal="true" aria-labelledby="registration-title">
+      <button className="dialog-close" onClick={onClose} type="button">Close</button>
+      <div className="eyebrow"><span className="eyebrow-dot" /> WORKSHOP NEXT STEP</div>
+      <h2 id="registration-title">Demo <span className="serif-accent">registration</span></h2>
+      <p className="dialog-intro">This captures an internal demo record only. It is not an official NxtWave registration.</p>
+      {!backendReady ? <div className="prototype-note">Demo registration storage isn’t connected in this preview. No personal details were requested or submitted. Configure Supabase to enable the form, or add the approved workshop URL to continue on the official page.</div> : registrationStatus === 'saved' ? <div className="registration-success"><b>Demo registration saved.</b><span>This prototype record is separate from official workshop signups. Student eligibility is self-reported, not verified.</span></div> : registrationStatus === 'duplicate' ? <div className="registration-success"><b>This email already has a demo registration.</b><span>It wasn’t counted a second time. This prototype record is not an official signup.</span></div> : <form className="registration-form" onSubmit={submit}>
+        <label className="field-label">YOUR NAME<input required minLength={2} maxLength={120} value={fullName} onChange={(event) => setFullName(event.target.value)} autoComplete="name" /></label>
+        <label className="field-label">EMAIL ADDRESS<input required type="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
+        <label className="field-label">COLLEGE<input required minLength={2} maxLength={180} value={college} onChange={(event) => setCollege(event.target.value)} autoComplete="organization" /></label>
+        <label className="field-label">I AM A<select value={userType} onChange={(event) => setUserType(event.target.value as 'student' | 'developer')}><option value="student">Student</option><option value="developer">Developer</option></select></label>
+        {userType === 'student' && <div className="registration-row">
+          <label className="field-label">BRANCH<select required value={branch} onChange={(event) => setBranch(event.target.value)}><option value="" disabled>Select branch</option>{['CSE', 'IT', 'AI/ML', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Other'].map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label className="field-label">FINAL-YEAR ENGINEERING STUDENT?<select required value={finalYear} onChange={(event) => setFinalYear(event.target.value)}><option value="" disabled>Select one</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+        </div>}
+        {selectedProject && <div className="selected-project-note"><small>PROJECT YOU’RE BRINGING</small><b>{selectedProject}</b></div>}
+        <label className="consent-label"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I agree to store these details for this demo registration. I understand this is not an official workshop signup.</span></label>
+        {registrationError && <p className="form-error" role="alert">{registrationError}</p>}
+        <button className="continue-button" disabled={busy}>{busy ? 'Saving demo registration…' : 'Save demo registration'} {!busy && <ArrowRight size={17} />}</button>
+        <p className="privacy-note">Email is normalized for duplicate prevention. Demo entries are kept separate from official registration totals.</p>
+      </form>}
+    </section>
+  </div>
 }
 
 export default App

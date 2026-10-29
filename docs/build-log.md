@@ -172,6 +172,41 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 07: workshop conversion flow with honest official handoff vs clearly labeled demo capture. Continue with unique registration handling, optional referrals and the basic admin funnel.
 
+## Build 07 — workshop conversion and demo registration
+
+**Status:** Complete
+**Scope:** Put an honest workshop next step on both result pages, distinguish official handoff from demo capture, and store demo registrations with deduplication and a minimal funnel.
+
+### Delivered
+
+- Results show a workshop action. If `VITE_WORKSHOP_URL` is configured with an HTTPS destination, the action opens that page and tracks only the click. It does not claim registration completion.
+- Without an official URL, the action opens a plainly labeled demo-registration dialog. It requests no details in local preview when Supabase isn't configured.
+- Added demo capture for name, email, college, student/developer type, student branch/final-year self-report, selected project, and explicit consent.
+- Added `demo_registrations` and `project_events` migration. Email is normalized and unique per campaign; the database marks eligibility only as self-reported. Demo table remains separate from any official registration data and has no public read policy.
+- Added `demo-registration` Edge Function with bounded request size, field/enum validation, service-role-only database RPC, generic errors, and no PII/provider key logging.
+- Captures landing, path start, result, workshop click, registration form start and saved registration events, with source (`utm_source` or `direct_unknown`), path and short-lived session UUID. CTA clicks are not saved as registrations.
+- Path B cards can be selected and the choice carries into demo registration.
+- Added migration/deployment instructions and updated README and roadmap.
+
+### Verification
+
+- `npm run build` completed successfully (frontend TypeScript check and Vite production bundle).
+- The local preview responds with HTTP 200.
+
+### Limits carried forward
+
+- No Supabase project or approved official workshop URL is configured in this workspace; the migration/function are not deployed, and remote registration/event writes are not exercised here.
+- Demo rows are internal prototype records, not NxtWave signups. Final-year eligibility is self-reported, not verified.
+- Per-user abuse rate limiting, referral codes, admin dashboard, and a deletion/retention process still need completion before public deployment.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 07 - workshop conversion and demo registration`.
+
+### Next build
+
+- Build 08: optional referral codes with aggregate progress, and an admin-only view of demo eligible/non-eligible counts plus event funnel/source aggregates.
+
 ## Build 01 — app foundation and journey entry
 
 **Status:** Complete

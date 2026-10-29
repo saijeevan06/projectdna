@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 06 — AI-tailored Path B catalogue**
+**Build 07 — workshop conversion and demo registration**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -14,6 +14,9 @@ Project DNA helps students and developers take a practical next step with a proj
 - Path A accepts a public GitHub repository or pasted README/description, then returns a Gemini or Groq makeover when configured, with a deterministic template fallback.
 - Path B selects three role/profile-matched curated projects; the server can tailor their summaries and roadmaps with Gemini/Groq while preserving catalogue content.
 - Path B keeps its local curated-card fallback when the server function or providers are unavailable.
+- Result pages offer an optional official workshop handoff or a clearly labeled internal demo registration.
+- Demo registration normalizes email, prevents duplicates per campaign and records self-reported student eligibility separately from official registrations.
+- Basic funnel events capture landing, path start, results, CTA clicks, registration form starts and saved demo registrations with source/path/session identifiers.
 - Users can review/edit answers; profile and project context remain session-scoped and are not saved.
 - GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 
@@ -29,11 +32,13 @@ To enable GitHub README retrieval, configure a Supabase project and deploy the E
 ```bash
 npx supabase login
 npx supabase link --project-ref YOUR_PROJECT_ID
+npx supabase db push
 npx supabase functions deploy project-makeover
 npx supabase functions deploy project-recommendations
+npx supabase functions deploy demo-registration
 ```
 
-Then put the project URL and JWT-style anon key in `.env.local` using [.env.example](.env.example) as a template. The browser anon key is public by design; never add a service-role key or AI provider key to frontend environment variables.
+Then put the project URL and JWT-style anon key in `.env.local` using [.env.example](.env.example) as a template. The browser anon key is public by design; never add a service-role key or AI provider key to frontend environment variables. Set `VITE_WORKSHOP_URL` only when an approved official workshop URL is available; without it, the result CTA opens the demo capture flow.
 
 To enable AI tailoring, add `GEMINI_API_KEY` and/or `GROQ_API_KEY` in the Supabase project's Edge Function secrets. Both paths use Gemini first, then Groq, then deterministic catalogue/template results. Model IDs are configurable with `GEMINI_MODEL` and `GROQ_MODEL`; defaults are `gemini-3.8-flash` and `openai/gpt-oss-120b`. If provider secrets are absent, curated results remain available.
 

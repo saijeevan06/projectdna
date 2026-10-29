@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.project-recommendations]
 verify_jwt = true
+
+[functions.demo-registration]
+verify_jwt = true
