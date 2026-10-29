@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 11 — forest-and-lime visual redesign**
+**Build 12 — Auth invitation recovery**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -23,6 +23,7 @@ Project DNA helps students and developers take a practical next step with a proj
 - Landing now has section navigation, direct hash routes for both journeys, featured role shortcuts, a moving interest strip, scroll progress, and reduced-motion-aware reveal animations.
 - Replaced the generic purple/lilac palette with forest ink, signal lime and warm paper; updated navigation, forms, buttons, result cards, dashboard, modal and footer colors for one visual system.
 - Added stronger focus states and contrast on the path cards.
+- Added an invitation callback screen that handles Supabase invite redirects, lets the invitee set a password using the short-lived access token, and explains expired or already-used links.
 - Users can review/edit answers; profile and project context remain session-scoped and are not saved.
 - GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 
@@ -46,6 +47,8 @@ npx supabase functions deploy project-admin
 ```
 
 Put the project URL and the legacy JWT-style `anon` key in `.env.local` using [.env.example](.env.example) as a template. This code currently sends the anon key as a bearer token, so do not substitute a new `sb_publishable_...` key until function auth wiring is migrated. Supabase says legacy `anon` and `service_role` keys are being deprecated by the end of 2026; migration is the next backend build. Never add a service-role/secret key or AI provider key to frontend variables. Set `VITE_WORKSHOP_URL` only when an approved official workshop URL is available; without it, the result CTA opens the demo capture flow. Restart Vite after editing `.env.local`.
+
+For local Auth invitations, this Vite app runs at `http://localhost:5173`. In Supabase Authentication → URL Configuration, set the Site URL to `http://localhost:5173` and add `http://localhost:5173/**` to Redirect URLs. The Dashboard invite uses the Site URL by default; a link sent while the Site URL pointed to `localhost:3000` will fail because this app is not listening there. Invite links are one-time and expire according to the project’s email OTP expiry; after fixing the URL, send a fresh invitation.
 
 Hosted Supabase Edge Functions provide `SUPABASE_URL` and the legacy `SUPABASE_SERVICE_ROLE_KEY` at runtime. Do not copy the service-role key into `.env.local` or the browser. To allow dashboard access, create a Supabase Auth user, then add its Auth UUID through the SQL editor:
 

@@ -198,7 +198,34 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 ### Next build
 
-- Build 12: authenticate a usable Supabase CLI/MCP connection, review and apply migrations, deploy functions, add the invited Auth user UUID to the admin allowlist, and migrate API-key usage.
+- Build 13: configure and verify Supabase Auth redirects, send/accept a fresh invitation, apply migrations, deploy functions, add the invited Auth user UUID to the admin allowlist, and migrate API-key usage.
+
+## Build 12 — Auth invitation recovery
+
+**Status:** Local app flow complete; Supabase redirect configuration and replacement invite are pending.
+**Scope:** Explain and repair the expired invitation path so a fresh Supabase Auth invite can be completed in the Vite app.
+
+### Delivered
+
+- Added an invitation redirect handler that recognizes Supabase invite tokens and Auth errors from URL fragments, then clears the fragment from the address bar.
+- Added a password setup screen that updates the invited user’s password through Supabase Auth using the one-time bearer token; it never stores or logs the password or token.
+- Added a helpful expired/used-link state and completion message.
+- Confirmed Vite listens on port 5173. The provided failed invite URL redirected to `localhost:3000`, where no app server is listening.
+- Supabase uses the project Auth Site URL when no allowed `redirectTo` is provided. Invite links expire according to Email OTP Expiration (the documented default is one hour) and must be resent after expiry.
+
+### Verification and blockers
+
+- `npm run build` completed successfully.
+- No Supabase settings were changed and no replacement invitation was sent. Set the Auth Site URL to `http://localhost:5173`, allow `http://localhost:5173/**`, then send a fresh invitation.
+- Migrations remain unapplied; the invited account cannot use the admin dashboard until the migration creates `public.admin_users` and its Auth UUID is added there.
+
+### Checkpoint
+
+- Pending checkpoint commit for Build 12.
+
+### Next build
+
+- Build 13: configure and verify Supabase Auth redirects, send/accept a fresh invitation, apply migrations, deploy functions, add the user to the admin allowlist, and migrate API-key usage.
 
 ## Build 10 — interactive landing experience
 

@@ -61,11 +61,13 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 **Build 11:** The shared interface now uses forest ink, signal lime and warm paper instead of the prior purple/lilac look. Navigation, CTAs, forms, cards, dashboard and footer use the same palette; focus and hover states remain visible. Build 10 routes and motion effects remain, with reduced-motion support.
 
-**Next:** Build 12 — complete Supabase setup. The URL and legacy JWT anon key were found swapped in `.env.local` and corrected locally. The CLI install/check did not complete and no Supabase connector is available in this Codex workspace, so migrations have not been applied. Authenticate a usable Supabase CLI/MCP connection, link the project, apply migrations, deploy functions and verify live behavior. Add the invited Auth user UUID to the admin allowlist after migrations, then migrate to publishable-key auth before switching away from the legacy key.
+**Build 12:** The local app now handles Supabase invite redirects, lets invitees set a password, and shows a recovery message for expired/used links. The app is on port 5173; the screenshot shows a redirect to port 3000. Supabase URL settings have not been changed and the expired invite has not been resent.
+
+**Next:** Build 13 — complete Supabase setup. In Authentication → URL Configuration, set Site URL to `http://localhost:5173` and add `http://localhost:5173/**` to Redirect URLs; send a fresh invite because the old token expired. Then apply migrations, deploy functions and verify live behavior. The CLI install/check did not complete and no Supabase connector is available in this Codex workspace, so hosted database setup remains pending. Add the invited Auth UUID to the admin allowlist after migrations, then migrate to publishable-key auth before switching away from the legacy key.
 
 ## Still to complete
 
-- `.env.local` contains the corrected URL and anon key and is ignored by Git; restart Vite so it reloads them. They are enough for current browser calls, but do not deploy database/functions by themselves.
+- `.env.local` contains the corrected URL and anon key and is ignored by Git; restart Vite so it reloads them. They are enough for current browser calls, but do not deploy database/functions by themselves. Local Auth invitation redirects also require the Site URL and allowlist above.
 - Link the Supabase project with its project reference, apply the two SQL migrations, deploy all four functions and verify the database RPCs/admin metrics against live records.
 - The user confirmed the Auth invitation, and Supabase reported it sent; the Auth user is visible in the project user list. Add that user UUID to `public.admin_users` after migrations create the table. Hosted Supabase provides the current legacy service-role variable to Edge Functions; never put it in frontend env.
 - Add Gemini/Groq secrets only if live AI tailoring is desired. Add the approved workshop URL before representing that path as official; otherwise the CTA correctly remains demo-only.

@@ -7,6 +7,8 @@ import { fetchGitHubMakeover, hasProjectFunctionConfig, isValidGitHubRepoUrl, Pr
 import { fetchProjectRecommendations, type RecommendationResult } from './lib/recommendationApi'
 import { fetchReferralProgress, getWorkshopUrl, saveDemoRegistration, trackProjectEvent, type DemoRegistrationResult, type RegistrationDraft, type RegistrationPath } from './lib/registrationApi'
 import { adminLogin, fetchAdminMetrics, type AdminMetrics } from './lib/adminApi'
+import { clearAuthRedirectHash, readInviteRedirect, type InviteRedirect } from './lib/authInvite'
+import { InviteAcceptance } from './InviteAcceptance'
 
 type Path = 'improve' | 'discover' | null
 
@@ -47,8 +49,13 @@ function App() {
   const [adminError, setAdminError] = useState('')
   const [adminBusy, setAdminBusy] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
+  const [inviteRedirect, setInviteRedirect] = useState<InviteRedirect>(() => readInviteRedirect(window.location.hash))
 
   useEffect(() => {
+    if (inviteRedirect) {
+      clearAuthRedirectHash()
+      return
+    }
     void trackProjectEvent('landing')
     const syncRoute = () => {
       const nextPath = window.location.hash === '#improve' ? 'improve' : window.location.hash === '#discover' ? 'discover' : null
@@ -248,6 +255,8 @@ function App() {
       }
     } finally { setGenerating(false) }
   }
+
+  if (inviteRedirect) return <InviteAcceptance redirect={inviteRedirect} onDone={() => { clearAuthRedirectHash(); window.location.hash = 'home'; setInviteRedirect(null) }} />
 
   return (
     <main className="page-shell">
