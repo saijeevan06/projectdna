@@ -65,12 +65,14 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 **Build 13 setup checkpoint:** Supabase Authentication → URL Configuration has Site URL `http://localhost:5173` and Redirect URL `http://localhost:5173/**`, verified in the project dashboard. `.env.local` has non-empty `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` entries and remains ignored by Git. The existing Auth user is confirmed and has signed in, so no replacement invite is needed. Production URL redirects must be added when a deployment domain is chosen.
 
-**Next:** Build 14 — apply migrations, deploy functions and verify live behavior. Then add the confirmed Auth user's UUID to the admin allowlist and migrate to publishable-key auth before switching away from the legacy key. The Supabase and Vercel connectors are not exposed as tools in this Codex session, and neither CLI is installed here, so hosted database/deployment operations are still pending. Add production and preview deployment URLs to Supabase Auth once the Vercel domain is known.
+**Build 14:** Both database migration files have been applied via Supabase SQL Editor. Catalog verification found all five expected tables with RLS enabled and all four expected RPCs. The existing Auth account is confirmed; a replacement invitation was not sent. Dashboard-applied migrations do not automatically reconcile the CLI migration ledger; reconcile versions `202610290001` and `202610290002` as applied before using `supabase db push`.
+
+**Next:** Build 15 — deploy the four Edge Functions, configure runtime secrets and the allowed origin, then verify live registration, referral and admin flows. Add the confirmed Auth user's UUID to the admin allowlist only after the user explicitly authorizes that access grant. Migrate frontend auth to a publishable key before switching away from the legacy key. Add production and preview deployment URLs to Supabase Auth once the Vercel domain is known.
 
 ## Still to complete
 
 - `.env.local` contains non-empty Supabase URL and anon key values and is ignored by Git; restart Vite so it reloads them. They are enough for current browser calls, but do not deploy database/functions by themselves. Local Auth redirects are configured to port 5173; add deployed Vercel domains before production invites.
-- Link the Supabase project with its project reference, apply the two SQL migrations, deploy all four functions and verify the database RPCs/admin metrics against live records.
+- Deploy all four Edge Functions and verify the database RPCs/admin metrics against live records. The migrations are applied, but reconcile CLI migration history for versions `202610290001` and `202610290002` before future `db push` use.
 - The user confirmed the Auth invitation, and Supabase reported it sent; the Auth user is visible in the project user list. Add that user UUID to `public.admin_users` after migrations create the table. Hosted Supabase provides the current legacy service-role variable to Edge Functions; never put it in frontend env.
 - Add Gemini/Groq secrets only if live AI tailoring is desired. Add the approved workshop URL before representing that path as official; otherwise the CTA correctly remains demo-only.
 - Add per-user/IP abuse controls and a data retention/deletion process. Validate Edge Function CORS against the deployed domain.

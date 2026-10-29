@@ -409,3 +409,34 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 ### Next build
 
 Implement the shared profile/context step and working client-side form state for both paths, including student/developer and role/time inputs. Keep data in memory only until the persistence and privacy approach is implemented.
+
+## Build 14 — hosted Supabase schema
+
+**Status:** Applied and verified in the connected Supabase project using its SQL Editor.
+
+### Delivered
+
+- Applied `202610290001_project_dna_demo_registrations.sql` and `202610290002_project_dna_referrals_admin.sql`.
+- Added demo registrations, project events, referral codes, referral attributions and the admin allowlist tables.
+- Added the event, registration, referral-progress and admin-metrics RPCs.
+- Both migrations enable RLS and restrict table access to `service_role`; the RPCs are likewise executable only by `service_role`.
+- The existing Auth account remains confirmed. No duplicate invitation was sent.
+
+### Verification
+
+- Supabase SQL Editor returned success for both migration SQL submissions.
+- A read-only catalog query confirmed all five tables exist and have RLS enabled.
+- A read-only catalog query confirmed all four expected RPCs exist.
+- No production data was inserted or modified by the verification queries.
+
+### Deployment note
+
+These migrations were submitted through the hosted SQL Editor because the Supabase CLI and connector were unavailable in this environment. The preflight found no `supabase_migrations.schema_migrations` table, so CLI migration history was not established by these dashboard submissions. Before using `supabase db push`, link/install the CLI and reconcile versions `202610290001` and `202610290002` as already applied; do not blindly push and rerun without that reconciliation.
+
+### Checkpoint
+
+- Build 14 is recorded in a Git checkpoint; hosted schema work is recorded separately from local Git migration files.
+
+### Next
+
+- Deploy the four Edge Functions, configure their secrets and allowed origin, then verify registration, referral and admin flows against the live project.
