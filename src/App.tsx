@@ -84,11 +84,11 @@ function App() {
     setError('')
     setFallbackNotice(contextNotice)
     try {
-      if (!usePasteOnly && githubUrl.trim()) {
-        if (!hasProjectFunctionConfig()) throw new ProjectApiError('SERVER_FUNCTION_NOT_CONFIGURED')
-        const result = await fetchGitHubMakeover(githubUrl.trim(), projectDescription, profile)
+      if (hasProjectFunctionConfig()) {
+        const result = await fetchGitHubMakeover(!usePasteOnly ? githubUrl.trim() : '', projectDescription, profile)
         setMakeover(result)
       } else {
+        if (!usePasteOnly && githubUrl.trim()) throw new ProjectApiError('SERVER_FUNCTION_NOT_CONFIGURED')
         const text = projectDescription.trim()
         if (!text) { setStep('fallback'); setError('Paste a README or a short project description to continue.'); return }
         const notice = contextNotice || (!hasProjectFunctionConfig() && githubUrl.trim()
@@ -265,10 +265,10 @@ function readableRepoError(code: string) {
 
 function MakeoverResults({ makeover, notice, onEdit }: { makeover: Makeover; notice: string; onEdit: () => void }) {
   return <>
-    <div className="eyebrow"><span className="eyebrow-dot" /> PROJECT MAKEOVER · TEMPLATE-BASED</div>
+    <div className="eyebrow"><span className="eyebrow-dot" /> PROJECT MAKEOVER · {makeover.provider.toUpperCase()}</div>
     <h1>{makeover.title}<br /><span className="serif-accent">next moves.</span></h1>
     <p className="hero-description makeover-summary">{makeover.summary}</p>
-    <div className="basis-note"><b>Basis:</b> {makeover.basis} {notice && <span>{notice}</span>}</div>
+    <div className="basis-note"><b>Basis:</b> {makeover.basis}<span>{makeover.providerNote}</span>{notice && <span>{notice}</span>}</div>
     <section className="makeover-section"><h2>Potential opportunities</h2><ul>{makeover.opportunities.map((item) => <li key={item}>{item}</li>)}</ul></section>
     <section className="makeover-section"><h2>Four ideas to explore</h2><div className="enhancement-grid">{makeover.enhancements.map((item) => <article key={item.title}><b>{item.title}</b><p>{item.detail}</p></article>)}</div></section>
     <section className="makeover-meta"><div><small>TECHNOLOGY IDEAS</small><div className="project-tags">{makeover.technologies.map((item) => <span key={item}>{item}</span>)}</div></div><div><small>DIFFICULTY · ESTIMATED TIME</small><b>{makeover.difficulty} · {makeover.estimatedTime}</b></div></section>

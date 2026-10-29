@@ -13,7 +13,9 @@ export type Makeover = {
   resumeBullet: string
   basis: string
   disclaimer: string
-  mode: 'template'
+  mode: 'ai' | 'template'
+  provider: 'gemini' | 'groq' | 'template'
+  providerNote: string
 }
 
 export function normalizeProjectText(value: string): string {
@@ -59,5 +61,7 @@ export function buildMakeover(text: string, profile: Profile, basis: string, fal
     basis,
     disclaimer: 'These are proposed ideas based on the material you shared. No source code was inspected, and no suggested feature has been implemented.',
     mode: 'template',
+    provider: 'template',
+    providerNote: 'Template-based suggestion; no AI provider was used for this result.',
   }
 }

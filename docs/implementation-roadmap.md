@@ -49,7 +49,7 @@ Path B retains a separate target-role prompt because recommendations are meant t
 | --- | --- | --- | --- |
 | 0. Scaffold | React/TypeScript/Vite app, route shell, docs, local run and initial screen | App launches and production bundle builds | Complete — Build 01 |
 | 1. Student UX | Landing, two paths, project context, shared profile, validation, state retention/back navigation, responsive UI | Both paths capture and review valid context | In progress — Build 02 delivered the core profile/review slice; validation and persistence still need hardening |
-| 2. Project results | Curated catalogue, bounded GitHub README retrieval, Gemini → Groq → deterministic fallback, structured result cards | Both paths return useful results with honest basis/fallback labels | In progress — Path B catalogue and template-based Path A makeover shipped in Build 04; Gemini/Groq fallback remains |
+| 2. Project results | Curated catalogue, bounded GitHub README retrieval, Gemini → Groq → deterministic fallback, structured result cards | Both paths return useful results with honest basis/fallback labels | In progress — Path B catalogue plus Path A server-side Gemini/Groq/template chain shipped in Build 05; Path B AI tailoring and live provider configuration remain |
 | 3. Conversion and referral | Visible CTA, approved official handoff or clearly labelled demo registration, unique email behavior, eligibility distinction, optional referral | Honest confirmation, deduplication and referral attribution | Planned; requires approved destination for real registration claims |
 | 4. Growth dashboard | Server-side admin access, eligible/demo separation, daily/source/funnel/referral aggregates | Admin-only metrics match stored records | Planned |
 | 5. QA and deployment | Failure handling, mobile review, secrets/config review, deploy and demo setup | P0 journeys can be demonstrated reliably | Planned |
@@ -59,6 +59,6 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 ## Current checkpoint and next build
 
-**Build 04:** Path A accepts a public GitHub URL or pasted project text and returns a clearly labeled template makeover. With a configured Supabase Edge Function, the server validates the URL and reads one bounded README; without it, the UI directs the user to paste context and uses a local template. No AI provider is connected, and inputs remain in browser memory.
+**Build 05:** Path A's Edge Function now calls Gemini first and Groq once after a provider error/invalid result, then returns the deterministic template if no valid provider result is available. Provider output is parsed and validated locally; provider keys remain in Supabase secrets. Paste-only requests also use the Edge Function when configured, with local template mode available in the preview.
 
-**Next:** Build 05 — connect Gemini → Groq → deterministic template fallback behind server-side validation, returning the existing structured makeover shape. Add provider keys only as Supabase secrets. Then continue with registration/CTA, referrals and dashboard.
+**Next:** Build 06 — apply the provider adapter to Path B's three curated project cards while preserving the same curated cards when providers fail. Once a Supabase project and secrets are available, validate the live Gemini/Groq/fallback chain; then continue with registration/CTA, referrals and dashboard.

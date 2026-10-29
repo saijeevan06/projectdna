@@ -4,15 +4,16 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 03 — curated Path B recommendations**
+**Build 05 — Path A provider chain**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
 - Path A captures a GitHub URL or project description; Path B captures a target role.
 - Both paths collect five profile answers: branch, experience, preferred technology, interests and available time.
 - Path B returns three role/profile-matched catalogue projects with outcomes, technologies, difficulty, skills and a starter roadmap.
-- Path A accepts a public GitHub repository or pasted README/description, then displays bounded template-based makeover guidance.
-- Users can review/edit answers and see the deterministic catalogue output without AI providers. Data remains in browser memory only.
+- Path A accepts a public GitHub repository or pasted README/description, then returns a Gemini or Groq makeover when configured, with a deterministic template fallback.
+- Path B returns three role/profile-matched curated project suggestions without depending on AI providers.
+- Users can review/edit answers; profile and project context remain session-scoped and are not saved.
 - GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
 
 ## Run locally
@@ -31,6 +32,8 @@ npx supabase functions deploy project-makeover
 ```
 
 Then put the project URL and JWT-style anon key in `.env.local` using [.env.example](.env.example) as a template. The browser anon key is public by design; never add a service-role key or AI provider key to frontend environment variables.
+
+To enable AI makeovers, add `GEMINI_API_KEY` and/or `GROQ_API_KEY` in the Supabase project's Edge Function secrets. The Edge Function uses Gemini first, then Groq, then the deterministic template. Model IDs are configurable with `GEMINI_MODEL` and `GROQ_MODEL`; defaults are `gemini-3.8-flash` and `openai/gpt-oss-120b`. If provider secrets are absent, the template remains available. **The current AI provider chain is connected to Path A; Path B still uses curated matches only.**
 
 Create a production bundle with `npm run build`.
 

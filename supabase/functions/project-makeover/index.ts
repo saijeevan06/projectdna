@@ -1,4 +1,5 @@
 import { buildMakeover, normalizeProjectText, type Profile } from '../_shared/makeover.ts'
+import { generateWithFallback } from '../_shared/ai.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
@@ -130,5 +131,17 @@ Deno.serve(async (request) => {
   const userNote = typeof body.projectText === 'string' ? normalizeProjectText(body.projectText) : ''
   if (repoUrl && userNote && context) context = `${context}\n\nUser note: ${userNote}`.slice(0, 12000)
   if (!context) return json({ error: 'EMPTY_CONTEXT' }, 422)
-  return json({ makeover: buildMakeover(context, body.profile, basis, fallbackTitle) })
+  const template = buildMakeover(context, body.profile, basis, fallbackTitle)
+  const generated = await generateWithFallback(context, body.profile, template.title)
+  if (!generated) return json({ makeover: template })
+  return json({ makeover: {
+    ...template,
+    ...generated.data,
+    estimatedTime: body.profile.time,
+    basis,
+    disclaimer: template.disclaimer,
+    mode: 'ai',
+    provider: generated.provider,
+    providerNote: `${generated.provider === 'gemini' ? 'Gemini' : 'Groq'} generated this suggestion; the response was checked against the application schema.`,
+  } })
 })

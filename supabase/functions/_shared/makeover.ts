@@ -43,5 +43,7 @@ export function buildMakeover(text: string, profile: Profile, basis: string, fal
     basis,
     disclaimer: 'These are proposed ideas based on the material you shared. No source code was inspected, and no suggested feature has been implemented.',
     mode: 'template' as const,
+    provider: 'template' as const,
+    providerNote: 'Template-based suggestion; AI providers were not configured or did not return a valid result.',
   }
 }

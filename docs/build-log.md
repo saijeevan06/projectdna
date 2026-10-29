@@ -103,6 +103,41 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 05: add the Gemini → Groq → template provider chain behind the Edge Function, with schema validation and bounded provider timeouts. Keep all model credentials in Supabase secrets.
 
+## Build 05 — Gemini/Groq provider chain
+
+**Status:** Complete
+**Scope:** Add server-side model tailoring to Path A with bounded failover, strict local validation and an always-available deterministic result.
+
+### Delivered
+
+- Gemini is the primary adapter; Groq is attempted once if Gemini is unavailable or returns a failed/invalid response; deterministic templates are used when neither produces a valid result or no provider keys are configured.
+- Gemini uses JSON-schema output; Groq uses JSON mode with the same explicit response shape. Both responses are parsed and validated in the Edge Function for required fields, string lengths, list sizes and difficulty enum before return.
+- The server sets `basis`, time estimate, provider identity and disclaimer. The UI labels the actual source as Gemini, Groq or template.
+- Prompts treat README/description content as untrusted data and ask for proposals only, no assertions about unseen code, and no fabricated metrics or completed work.
+- Each configured provider attempt logs only its name, status, sanitized error class and elapsed time; it does not log keys or project text.
+- Provider keys are read from Supabase secrets (`GEMINI_API_KEY`, `GROQ_API_KEY`). Model identifiers are configurable (`GEMINI_MODEL`, `GROQ_MODEL`). No provider key is added to the frontend or repository.
+- Pasted Path A context calls the same server function when configured; local preview keeps a deterministic template path.
+- Updated README and implementation roadmap.
+
+### Verification
+
+- `npm run build` completed successfully for the React/TypeScript frontend.
+- Provider API shapes and structured-output behavior were checked against current official documentation: [Gemini structured outputs](https://ai.google.dev/gemini-api/docs/generate-content/structured-output), [Groq structured outputs](https://console.groq.com/docs/structured-outputs), [Groq model deprecations](https://console.groq.com/docs/deprecations).
+
+### Limits carried forward
+
+- No Supabase project, Deno runtime or provider secrets are configured here. The Edge Function is not deployed or typechecked in a live Supabase runtime, and Gemini/Groq success/failure behavior has not been exercised against provider accounts.
+- Path B still uses its deterministic three-card catalogue and is not AI-tailored yet.
+- Registration, referral, campaign event storage and admin dashboard remain unimplemented.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 05 - Gemini Groq provider chain`.
+
+### Next build
+
+- Build 06: tailor Path B's curated three-card shortlist through the provider adapter while keeping the deterministic cards as fallback; then exercise the live provider chain after Supabase secrets are configured.
+
 ## Build 01 — app foundation and journey entry
 
 **Status:** Complete
