@@ -17,6 +17,11 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 - Original PRD, TRD and feature specification are preserved under `docs/`.
 - README captures setup, current capability and product boundaries.
 
+### Verification
+
+- `npm install --no-audit --no-fund` completed successfully.
+- `npm run build` completed successfully (TypeScript check and Vite production bundle).
+
 ### Limits carried forward
 
 - Inputs are visual only: there is no validation, persistence or next-step submission yet.
@@ -26,7 +31,7 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 ### Checkpoint
 
-- Git commit: `checkpoint: build 01 - app foundation and journey entry` (created after the production bundle succeeds).
+- Git commit: `checkpoint: build 01 - app foundation and journey entry`.
 
 ### Next build
 
