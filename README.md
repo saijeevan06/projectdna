@@ -4,14 +4,15 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 02 — profile intake and review**
+**Build 03 — curated Path B recommendations**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
 - Path A captures a GitHub URL or project description; Path B captures a target role.
 - Both paths collect five profile answers: branch, experience, preferred technology, interests and available time.
-- Users can review and edit their answers. Data remains in browser memory only.
-- The result screen is an intake review, not generated recommendations. The workshop destination remains a placeholder until an approved URL is provided.
+- Path B returns three role/profile-matched catalogue projects with outcomes, technologies, difficulty, skills and a starter roadmap.
+- Users can review/edit answers and see the deterministic catalogue output without AI providers. Data remains in browser memory only.
+- Path A currently stops at its project brief. GitHub retrieval and makeover recommendations are still planned. The workshop destination remains a placeholder until an approved URL is provided.
 
 ## Run locally
 

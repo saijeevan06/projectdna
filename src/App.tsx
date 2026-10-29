@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Compass, Github, Sparkles } from 'lucide-react'
+import type { Profile } from './types'
+import { recommendProjects, type ProjectIdea } from './data/projects'
 
 type Path = 'improve' | 'discover' | null
-type Profile = { branch: string; experience: string; technology: string; interests: string[]; time: string }
 
 const profileQuestions = [
   { key: 'branch', title: 'What are you studying?', options: ['CSE', 'IT', 'AI/ML', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Other'] },
@@ -14,7 +15,7 @@ const interestOptions = ['Web development', 'AI', 'ML', 'Computer vision', 'NLP'
 
 function App() {
   const [path, setPath] = useState<Path>(null)
-  const [step, setStep] = useState<'context' | 'profile' | 'summary'>('context')
+  const [step, setStep] = useState<'context' | 'profile' | 'summary' | 'results'>('context')
   const [githubUrl, setGithubUrl] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
   const [targetRole, setTargetRole] = useState('')
@@ -96,7 +97,7 @@ function App() {
         </section>
       ) : (
         <section className="intake-wrap">
-          <button className="back-button" onClick={() => step === 'context' ? (setPath(null), setError('')) : changeStep(step === 'summary' ? 'profile' : 'context')}><ArrowLeft size={16} /> Back</button>
+          <button className="back-button" onClick={() => step === 'context' ? (setPath(null), setError('')) : changeStep(step === 'summary' || step === 'results' ? 'profile' : 'context')}><ArrowLeft size={16} /> Back</button>
           <div className="intake-card">
             {step === 'context' && <>
               <div className="eyebrow"><span className="eyebrow-dot" /> FIRST, A LITTLE CONTEXT</div>
@@ -134,9 +135,16 @@ function App() {
                 <div><small>PREFERRED TECHNOLOGY · TIME</small><strong>{profile.technology} · {profile.time}</strong></div>
                 <div><small>INTERESTS</small><strong>{profile.interests.join(', ')}</strong></div>
               </div>
-              <div className="prototype-note">Recommendations are the next build. Your answers currently stay in this browser session.</div>
-              <button className="continue-button" onClick={() => changeStep('profile')}>Edit my answers <ArrowRight size={17} /></button>
+              {path === 'discover' ? <>
+                <div className="prototype-note">Matched from our curated catalogue using your role, interests, technology and available time. No AI provider is needed.</div>
+                <button className="continue-button" onClick={() => changeStep('results')}>Get project recommendations <ArrowRight size={17} /></button>
+              </> : <>
+                <div className="prototype-note">Your project brief is ready. Project makeover results are the next build; this prototype does not fetch or analyze repositories yet.</div>
+                <button className="continue-button" onClick={() => changeStep('profile')}>Edit my answers <ArrowRight size={17} /></button>
+              </>}
             </>}
+
+            {step === 'results' && path === 'discover' && <Recommendations role={targetRole} profile={profile} onEdit={() => changeStep('profile')} />}
           </div>
         </section>
       )}
@@ -147,6 +155,30 @@ function App() {
       </footer>
     </main>
   )
+}
+
+function Recommendations({ role, profile, onEdit }: { role: string; profile: Profile; onEdit: () => void }) {
+  const projects = recommendProjects(profile, role)
+  return <>
+    <div className="eyebrow"><span className="eyebrow-dot" /> YOUR PROJECT SHORTLIST</div>
+    <h1>Three ways<br />to <span className="serif-accent">grow.</span></h1>
+    <p className="hero-description">Ideas for a <b>{role}</b> path, shaped around {profile.time.toLowerCase()}, {profile.technology === 'No preference' ? 'any technology' : profile.technology}, and your interests.</p>
+    <div className="catalogue-note"><Sparkles size={15} /> Curated matches · Works without AI</div>
+    <div className="recommendation-list">{projects.map((project, index) => <ProjectCard key={project.id} project={project} index={index + 1} />)}</div>
+    <div className="results-workshop"><div><b>Keep building with us</b><span>Join the free 60-minute AI project workshop.</span></div><a href="#workshop">Workshop info <ArrowUpRight size={14} /></a></div>
+    <button className="text-button" onClick={onEdit}><ArrowLeft size={14} /> Edit your answers</button>
+  </>
+}
+
+function ProjectCard({ project, index }: { project: ProjectIdea; index: number }) {
+  return <article className="recommendation-card">
+    <div className="recommendation-topline"><span>PROJECT 0{index}</span><span>{project.difficulty} · {project.time}</span></div>
+    <h2>{project.title}</h2>
+    <p className="project-problem">{project.problem}</p>
+    <div className="project-outcome"><small>WHAT YOU’LL MAKE</small><p>{project.outcome}</p></div>
+    <div className="project-tags">{project.technologies.map((technology) => <span key={technology}>{technology}</span>)}</div>
+    <div className="project-detail-grid"><div><small>SKILLS YOU’LL PRACTICE</small><p>{project.skills.join(' · ')}</p></div><div><small>STARTER ROADMAP</small><ol>{project.roadmap.map((step) => <li key={step}>{step}</li>)}</ol></div></div>
+  </article>
 }
 
 export default App

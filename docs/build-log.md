@@ -35,6 +35,38 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - Build 03: curated Path B project recommendations matched to target role, time, technology and interests. Keep three recommendations available without AI providers.
 
+## Build 03 — curated Path B recommendations
+
+**Status:** Complete  
+**Scope:** Use the reviewed Path B profile to return three useful project ideas without depending on an AI service.
+
+### Delivered
+
+- Added a small curated catalogue spanning web, AI/NLP, computer vision, IoT, cybersecurity and analytics.
+- Deterministic ranking uses target-role keyword overlap, chosen interests, preferred technology and available time.
+- Exactly three recommendations are displayed, including problem, expected outcome, technologies, difficulty/time, skills and a starter roadmap.
+- Results identify themselves as curated, so users are not led to believe an AI model or repository analysis produced them.
+- Workshop information remains visible on results; no external registration URL has been configured.
+- Updated README and implementation roadmap for the delivered Path B scope and next Path A build.
+
+### Verification
+
+- `npm run build` completed successfully (TypeScript check and Vite production bundle).
+
+### Limits carried forward
+
+- Path A remains a brief review only; GitHub retrieval, pasted README normalization and project makeover are not implemented.
+- No AI providers, persistence, registration, referral or dashboard are connected.
+- Catalogue size is intentionally small; recommendations are rule-ranked, not generated or guaranteed to fit every role.
+
+### Checkpoint
+
+- Git commit: `checkpoint: build 03 - curated Path B recommendations`.
+
+### Next build
+
+- Build 04: Path A bounded GitHub README retrieval with pasted description fallback and honest basis labeling. Keep provider orchestration server-side for the later Gemini/Groq/template fallback slice.
+
 ## Build 01 — app foundation and journey entry
 
 **Status:** Complete  

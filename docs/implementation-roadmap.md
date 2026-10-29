@@ -49,7 +49,7 @@ Path B retains a separate target-role prompt because recommendations are meant t
 | --- | --- | --- | --- |
 | 0. Scaffold | React/TypeScript/Vite app, route shell, docs, local run and initial screen | App launches and production bundle builds | Complete — Build 01 |
 | 1. Student UX | Landing, two paths, project context, shared profile, validation, state retention/back navigation, responsive UI | Both paths capture and review valid context | In progress — Build 02 delivered the core profile/review slice; validation and persistence still need hardening |
-| 2. Project results | Curated catalogue, bounded GitHub README retrieval, Gemini → Groq → deterministic fallback, structured result cards | Both paths return useful results with honest basis/fallback labels | Planned |
+| 2. Project results | Curated catalogue, bounded GitHub README retrieval, Gemini → Groq → deterministic fallback, structured result cards | Both paths return useful results with honest basis/fallback labels | In progress — Path B catalogue shipped in Build 03; Path A and AI fallback remain |
 | 3. Conversion and referral | Visible CTA, approved official handoff or clearly labelled demo registration, unique email behavior, eligibility distinction, optional referral | Honest confirmation, deduplication and referral attribution | Planned; requires approved destination for real registration claims |
 | 4. Growth dashboard | Server-side admin access, eligible/demo separation, daily/source/funnel/referral aggregates | Admin-only metrics match stored records | Planned |
 | 5. QA and deployment | Failure handling, mobile review, secrets/config review, deploy and demo setup | P0 journeys can be demonstrated reliably | Planned |
@@ -59,6 +59,6 @@ Sequence follows the 48-hour challenge plan. P1 features (CSV export, recommenda
 
 ## Current checkpoint and next build
 
-**Build 02:** both paths collect their path context and five shared profile answers, validate required answers, and show an editable review summary in the current browser session. No input is persisted or sent to a server, and recommendations are not generated yet.
+**Build 03:** Path B ranks a small curated catalogue by target-role overlap, interests, preferred technology and time available, then shows three project cards with problem, outcome, stack, difficulty, skills and roadmap. The matching works without AI. Path A still ends at the brief review. Inputs are only held in browser memory.
 
-**Next:** Build 03 — make the reviewed profile feed Path B’s curated project catalogue and return three role/time/technology-aligned recommendations. Then add Path A's bounded GitHub README import and the provider/fallback chain as separate, reviewable slices.
+**Next:** Build 04 — implement Path A's bounded public GitHub README retrieval and paste-description fallback, then produce structured project makeover guidance. Add the Gemini → Groq → template provider chain as a separate backend slice so provider keys remain server-side.
