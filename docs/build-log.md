@@ -189,7 +189,7 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 - `npm run build` completed successfully.
 - Supabase CLI was not available globally; the temporary `npx` CLI check stalled without output and was stopped. No Supabase connector tools are exposed in this workspace, so migrations were not applied.
-- The user supplied `makamsaijeevan06@gmail.com` for the Auth invitation. The invitation has not been sent: creating an Auth identity that is intended for admin access requires action-time confirmation before changing security-sensitive access. No Auth user or admin allowlist entry exists yet.
+- After the user confirmed the exact recipient and purpose, the Supabase dashboard confirmed the Auth invitation was sent and the new Auth user appeared in the users list. The Auth UUID is available there for the later admin allowlist step. No migrations are applied, so the allowlist table is not available yet.
 - Lovable editing tools are not available to this task; the redesign was made in the local project code.
 
 ### Checkpoint
@@ -198,7 +198,7 @@ Each build checkpoint records shipped behavior, known limits, documentation chan
 
 ### Next build
 
-- Build 12: authenticate a usable Supabase CLI/MCP connection, apply and verify migrations, deploy functions, obtain action-time confirmation before inviting `makamsaijeevan06@gmail.com` for admin access, add the invited user UUID to the allowlist, and migrate API-key usage.
+- Build 12: authenticate a usable Supabase CLI/MCP connection, review and apply migrations, deploy functions, add the invited Auth user UUID to the admin allowlist, and migrate API-key usage.
 
 ## Build 10 — interactive landing experience
 
