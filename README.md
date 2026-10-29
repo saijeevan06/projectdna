@@ -4,12 +4,14 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 01 — app foundation and journey entry**
+**Build 02 — profile intake and review**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
-- Choosing either path opens its first input screen.
-- This is a front-end prototype. Inputs are not submitted or saved, and the workshop destination is a placeholder until an approved URL is provided.
+- Path A captures a GitHub URL or project description; Path B captures a target role.
+- Both paths collect five profile answers: branch, experience, preferred technology, interests and available time.
+- Users can review and edit their answers. Data remains in browser memory only.
+- The result screen is an intake review, not generated recommendations. The workshop destination remains a placeholder until an approved URL is provided.
 
 ## Run locally
 
@@ -26,6 +28,7 @@ Create a production bundle with `npm run build`.
 - [Technical requirements](docs/technical-requirements.txt)
 - [Feature specification](docs/feature-specification.txt)
 - [Build log and next checkpoint](docs/build-log.md)
+- [Implementation roadmap and current flow](docs/implementation-roadmap.md)
 
 ## Product boundaries
 
