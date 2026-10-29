@@ -440,3 +440,11 @@ These migrations were submitted through the hosted SQL Editor because the Supaba
 ### Next
 
 - Deploy the four Edge Functions, configure their secrets and allowed origin, then verify registration, referral and admin flows against the live project.
+
+### Build 15 deployment preparation
+
+- Confirmed all four local function entry points and their shared modules are present; the current CLI supports API-based deployment without Docker.
+- Deployment could not start because the Supabase CLI has no access token (`projects list` returned `AccessTokenRequiredError`). No credential was requested or exposed in chat.
+- Before deploying browser-facing functions, configure `ALLOWED_ORIGIN` to the exact Vercel production origin. Provider keys `GEMINI_API_KEY` and `GROQ_API_KEY` are optional; without them the code returns its catalogue/template fallback.
+- Next operator action: authenticate the local CLI using `npx supabase login` and a scoped token entered in the local terminal. Then deploy the four named functions with project ref `alaobrluwmzwtxesgdwl` and `--use-api`; preserve the configured JWT verification.
+- No hosted function deployment has been claimed or attempted without authentication.
