@@ -7,6 +7,7 @@ export type RegistrationDraft = {
   college: string
   userType: 'student' | 'developer'
   branch: string | null
+  academicYear: string | null
   finalYearEngineering: boolean | null
   selectedProject: string
   consent: boolean
@@ -19,14 +20,6 @@ export type DemoRegistrationResult = {
   referralCode: string
   referralCount: number
   referralAttributed: boolean
-}
-
-export function getWorkshopUrl(): string {
-  const value = import.meta.env.VITE_WORKSHOP_URL?.trim() || ''
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' ? url.toString() : ''
-  } catch { return '' }
 }
 
 function sessionId(): string {

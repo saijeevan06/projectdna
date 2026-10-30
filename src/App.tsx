@@ -5,7 +5,7 @@ import { projectCatalogue, recommendProjects, type ProjectIdea } from './data/pr
 import { buildMakeover, type Makeover } from './lib/makeover'
 import { fetchGitHubMakeover, hasProjectFunctionConfig, isValidGitHubRepoUrl, ProjectApiError } from './lib/projectApi'
 import { fetchProjectRecommendations, type RecommendationResult } from './lib/recommendationApi'
-import { fetchReferralProgress, getWorkshopUrl, saveDemoRegistration, trackProjectEvent, type DemoRegistrationResult, type RegistrationDraft, type RegistrationPath } from './lib/registrationApi'
+import { fetchReferralProgress, saveDemoRegistration, trackProjectEvent, type DemoRegistrationResult, type RegistrationDraft, type RegistrationPath } from './lib/registrationApi'
 import { adminLogin, fetchAdminMetrics, type AdminMetrics } from './lib/adminApi'
 import { clearAuthRedirectHash, readInviteRedirect, type InviteRedirect } from './lib/authInvite'
 import { InviteAcceptance } from './InviteAcceptance'
@@ -205,11 +205,6 @@ function App() {
   function handleWorkshopClick() {
     const pathValue = path === 'improve' ? 'improve' : path === 'discover' ? 'discover' : 'unknown'
     void trackProjectEvent('workshop_cta_click', pathValue)
-    const destination = getWorkshopUrl()
-    if (destination) {
-      window.open(destination, '_blank', 'noopener,noreferrer')
-      return
-    }
     setRegistrationResult(null)
     setRegistrationError('')
     setRegistrationOpen(true)
@@ -273,6 +268,18 @@ function App() {
   }
 
   if (inviteRedirect) return <InviteAcceptance redirect={inviteRedirect} onDone={() => { clearAuthRedirectHash(); window.location.hash = 'home'; setInviteRedirect(null) }} />
+
+  if (registrationOpen) return <RegistrationPage
+    profileBranch={profile.branch}
+    initialUserType={audience || 'student'}
+    registrationResult={registrationResult}
+    registrationError={registrationError}
+    selectedProject={selectedProject}
+    path={path === 'improve' ? 'improve' : path === 'discover' ? 'discover' : 'unknown'}
+    onClose={() => setRegistrationOpen(false)}
+    onSubmit={handleDemoRegistration}
+    onReferralProgress={refreshReferralProgress}
+  />
 
   return (
     <main className="page-shell">
@@ -395,17 +402,6 @@ function App() {
         <div><span className="footer-burst">✳</span><span><b>Build Your First AI Project</b> <i>·</i> A free, 60-minute workshop</span></div>
         <button className="footer-action" onClick={handleWorkshopClick}>Workshop next step <ArrowUpRight size={15} /></button>
       </footer>
-      {registrationOpen && <RegistrationDialog
-        profileBranch={profile.branch}
-        initialUserType={audience || 'student'}
-        registrationResult={registrationResult}
-        registrationError={registrationError}
-        selectedProject={selectedProject}
-        path={path === 'improve' ? 'improve' : path === 'discover' ? 'discover' : 'unknown'}
-        onClose={() => setRegistrationOpen(false)}
-        onSubmit={handleDemoRegistration}
-        onReferralProgress={refreshReferralProgress}
-      />}
       {adminOpen && <AdminDialog metrics={adminMetrics} error={adminError} busy={adminBusy} onClose={() => { setAdminOpen(false); setAdminToken(''); setAdminMetrics(null) }} onLogin={async (email, password) => {
         setAdminBusy(true); setAdminError('')
         try { const token = await adminLogin(email, password); const metrics = await fetchAdminMetrics(token); setAdminToken(token); setAdminMetrics(metrics) }
@@ -522,11 +518,10 @@ function MakeoverResults({ makeover, notice, onWorkshop, onEdit }: { makeover: M
 }
 
 function ResultsWorkshop({ onClick }: { onClick: () => void }) {
-  const official = Boolean(getWorkshopUrl())
-  return <div className="results-workshop"><div><b>Keep building with us</b><span>{official ? 'Continue to the configured workshop registration page.' : 'Open the clearly labeled demo registration flow.'}</span></div><button onClick={onClick}>{official ? 'Open registration' : 'Register (demo)'} <ArrowUpRight size={14} /></button></div>
+  return <div className="results-workshop"><div><b>Keep building with us</b><span>Continue to the Project DNA workshop registration page.</span></div><button onClick={onClick}>Register for workshop <ArrowUpRight size={14} /></button></div>
 }
 
-function RegistrationDialog({ profileBranch, initialUserType, registrationResult, registrationError, selectedProject, path, onClose, onSubmit, onReferralProgress }: {
+function RegistrationPage({ profileBranch, initialUserType, registrationResult, registrationError, selectedProject, path, onClose, onSubmit, onReferralProgress }: {
   profileBranch: string
   initialUserType: Audience
   registrationResult: DemoRegistrationResult | null
@@ -542,9 +537,11 @@ function RegistrationDialog({ profileBranch, initialUserType, registrationResult
   const [college, setCollege] = useState('')
   const [userType, setUserType] = useState<Audience>(initialUserType)
   const [branch, setBranch] = useState(profileBranch || '')
+  const [academicYear, setAcademicYear] = useState('')
   const [finalYear, setFinalYear] = useState('')
   const [consent, setConsent] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [inviteCopyStatus, setInviteCopyStatus] = useState('')
   const backendReady = hasProjectFunctionConfig()
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -556,6 +553,7 @@ function RegistrationDialog({ profileBranch, initialUserType, registrationResult
       college,
       userType,
       branch: userType === 'student' ? branch : null,
+      academicYear: userType === 'student' ? academicYear : null,
       finalYearEngineering: userType === 'student' ? finalYear === 'yes' : null,
       selectedProject,
       consent,
@@ -565,29 +563,61 @@ function RegistrationDialog({ profileBranch, initialUserType, registrationResult
     setBusy(false)
   }
 
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <section className="registration-dialog" role="dialog" aria-modal="true" aria-labelledby="registration-title">
-      <button className="dialog-close" onClick={onClose} type="button">Close</button>
-      <div className="eyebrow"><span className="eyebrow-dot" /> WORKSHOP NEXT STEP</div>
-      <h2 id="registration-title">Demo <span className="serif-accent">registration</span></h2>
-      <p className="dialog-intro">This captures an internal demo record only. It is not an official NxtWave registration.</p>
-      {!backendReady ? <div className="prototype-note">Demo registration storage isn’t connected in this preview. No personal details were requested or submitted. Configure Supabase to enable the form, or add the approved workshop URL to continue on the official page.</div> : registrationResult ? <div className="registration-success"><b>{registrationResult.status === 'saved' ? 'Demo registration saved.' : 'This email already has a demo registration.'}</b><span>{registrationResult.status === 'saved' ? 'This prototype record is separate from official workshop signups. Student eligibility is self-reported, not verified.' : 'It wasn’t counted a second time. This prototype record is not an official signup.'}</span><div className="referral-box"><small>YOUR OPTIONAL INVITE LINK</small><code>{`${window.location.origin}/?ref=${registrationResult.referralCode}`}</code><button type="button" className="text-button" onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}/?ref=${registrationResult.referralCode}`) }}><Copy size={14} /> Copy link</button><a href={`https://wa.me/?text=${encodeURIComponent(`I’m exploring a project idea with Project DNA. Join me: ${window.location.origin}/?ref=${registrationResult.referralCode}`)}`} target="_blank" rel="noreferrer">Share on WhatsApp <ArrowUpRight size={13} /></a><div><b>{registrationResult.referralCount} / 3</b><span> optional invitations registered</span></div><button type="button" className="text-button" onClick={() => void onReferralProgress(registrationResult.referralCode)}>Check progress</button>{registrationResult.referralAttributed && <span>Your registration was attributed to an invite.</span>}</div></div> : <form className="registration-form" onSubmit={submit}>
+  async function copyInviteLink(code: string) {
+    const inviteUrl = `${window.location.origin}/?ref=${code}`
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setInviteCopyStatus('Invite link copied')
+    } catch {
+      setInviteCopyStatus('Copy was blocked. Select and copy the link above.')
+    }
+  }
+
+  return <main className="workshop-registration-page">
+    <header className="workshop-registration-header">
+      <button type="button" className="back-button" onClick={onClose}><ArrowLeft size={15} /> {path === 'unknown' ? 'Back to Project DNA' : 'Back to your project'}</button>
+      <a className="brand" href="#home" onClick={(event) => { event.preventDefault(); onClose() }}><span className="brand-mark"><Sparkles size={17} strokeWidth={2.4} /></span><span>project<span className="brand-light">dna</span></span></a>
+    </header>
+    <section className="workshop-registration-card" aria-labelledby="registration-title">
+      <div className="eyebrow"><span className="eyebrow-dot" /> YOUR NEXT STEP</div>
+      <h1 id="registration-title">Register for the<br /><span className="serif-accent">AI workshop.</span></h1>
+      <p className="workshop-registration-intro">Save your place in the Project DNA workshop flow, then invite three friends to join you.</p>
+      <div className="prototype-note">This prototype records a Project DNA demo registration. It does not enroll you in NxtWave’s official workshop system or send an email confirmation.</div>
+      {!backendReady ? <div className="form-error" role="alert">Registration is temporarily unavailable because the secure registration service is not connected. Your details have not been collected.</div> : registrationResult ? <div className="registration-complete">
+        <div className="registration-success-icon"><Check size={20} /></div>
+        <h2>{registrationResult.status === 'saved' ? 'Project DNA registration saved.' : 'You already have a Project DNA registration.'}</h2>
+        <p>{registrationResult.status === 'saved' ? 'Your Project DNA workshop registration is recorded. Next, help us bring three friends along.' : 'We found an existing Project DNA registration for this email. You can still share your referral link.'}</p>
+        <section className="referral-box referral-milestone" aria-label="Invite three friends">
+          <small>YOUR NEXT STEP</small><h3>Invite 3 friends</h3>
+          <div className="referral-progress-copy"><b>{registrationResult.referralCount} / 3</b><span>friends registered through your link</span></div>
+          <div className="referral-progress-track" role="progressbar" aria-label="Friends registered through your link" aria-valuemin={0} aria-valuemax={3} aria-valuenow={Math.min(3, registrationResult.referralCount)}><span style={{ width: `${Math.min(100, registrationResult.referralCount / 3 * 100)}%` }} /></div>
+          <p>Share your personal link. Each friend counts after they complete their Project DNA registration.</p>
+          <code>{`${window.location.origin}/?ref=${registrationResult.referralCode}`}</code>
+          <button type="button" className="continue-button" onClick={() => void copyInviteLink(registrationResult.referralCode)}><Copy size={15} /> {inviteCopyStatus || 'Copy invite link'}</button>
+          {inviteCopyStatus && <span className="invite-copy-status" role="status">{inviteCopyStatus}</span>}
+          <a href={`https://wa.me/?text=${encodeURIComponent(`I registered for the Project DNA AI workshop. Join me: ${window.location.origin}/?ref=${registrationResult.referralCode}`)}`} target="_blank" rel="noreferrer">Invite friends on WhatsApp <ArrowUpRight size={13} /></a>
+          <button type="button" className="text-button" onClick={() => void onReferralProgress(registrationResult.referralCode)}>Refresh invite progress</button>
+          {registrationResult.referralAttributed && <span>Your registration was attributed to a friend’s invite.</span>}
+        </section>
+      </div> : <form className="registration-form workshop-registration-form" onSubmit={submit}>
         <label className="field-label">YOUR NAME<input required minLength={2} maxLength={120} value={fullName} onChange={(event) => setFullName(event.target.value)} autoComplete="name" /></label>
         <label className="field-label">EMAIL ADDRESS<input required type="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
         <label className="field-label">COLLEGE<input required minLength={2} maxLength={180} value={college} onChange={(event) => setCollege(event.target.value)} autoComplete="organization" /></label>
         <label className="field-label">I AM A<select value={userType} onChange={(event) => setUserType(event.target.value as 'student' | 'developer')}><option value="student">Student</option><option value="developer">Developer</option></select></label>
         {userType === 'student' && <div className="registration-row">
           <label className="field-label">BRANCH<select required value={branch} onChange={(event) => setBranch(event.target.value)}><option value="" disabled>Select branch</option>{['CSE', 'IT', 'AI/ML', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Other'].map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label className="field-label">CURRENT YEAR<select required value={academicYear} onChange={(event) => setAcademicYear(event.target.value)}><option value="" disabled>Select year</option>{['1st year', '2nd year', '3rd year', '4th year', '5th year', 'Other'].map((item) => <option key={item}>{item}</option>)}</select></label>
           <label className="field-label">FINAL-YEAR ENGINEERING STUDENT?<select required value={finalYear} onChange={(event) => setFinalYear(event.target.value)}><option value="" disabled>Select one</option><option value="yes">Yes</option><option value="no">No</option></select></label>
         </div>}
         {selectedProject && <div className="selected-project-note"><small>PROJECT YOU’RE BRINGING</small><b>{selectedProject}</b></div>}
-        <label className="consent-label"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I agree to store these details for this demo registration. I understand this is not an official workshop signup.</span></label>
+        <label className="consent-label"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I confirm I want to register for the workshop and agree to store my details in this Project DNA prototype. I understand this does not enroll me in NxtWave’s official system.</span></label>
         {registrationError && <p className="form-error" role="alert">{registrationError}</p>}
-        <button className="continue-button" disabled={busy}>{busy ? 'Saving demo registration…' : 'Save demo registration'} {!busy && <ArrowRight size={17} />}</button>
-        <p className="privacy-note">Email is normalized for duplicate prevention. Demo entries are kept separate from official registration totals.</p>
+        <button className="continue-button" disabled={busy}>{busy ? 'Confirming registration…' : 'Confirm workshop registration'} {!busy && <ArrowRight size={17} />}</button>
+        <p className="privacy-note">Your email prevents duplicate entries. The year and final-year answer are self-reported and used for campaign eligibility reporting.</p>
       </form>}
     </section>
-  </div>
+    <footer className="workshop-registration-footer">Project DNA · Free, 60-minute AI workshop · Demo registration flow</footer>
+  </main>
 }
 
 function AdminDialog({ metrics, error, busy, onClose, onLogin, onRefresh }: { metrics: AdminMetrics | null; error: string; busy: boolean; onClose: () => void; onLogin: (email: string, password: string) => Promise<void>; onRefresh: () => Promise<void> }) {

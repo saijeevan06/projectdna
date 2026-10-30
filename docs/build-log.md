@@ -545,3 +545,27 @@ These migrations were submitted through the hosted SQL Editor because the Supaba
 ### Checkpoint
 
 - `checkpoint: build 18 - assessment submission materials`
+
+## Build 19 — in-app workshop registration and referral flow
+
+**Status:** Implemented, deployed to Supabase, and production build passes.
+
+### Delivered
+
+- Workshop CTAs now open a dedicated full-page Project DNA registration flow. Removed the configured external destination behavior so an old YouTube value cannot redirect visitors.
+- Form collects name, email, college, user type, and for students branch, current academic year and self-reported final-year engineering status. It requires explicit workshop intent and consent.
+- Added a dedicated `academic_year` column, validation constraint and updated registration RPC in migration `20261030140633_registration_academic_year.sql`. Supabase confirms the migration and column are present.
+- Deployed `demo-registration` Edge Function version 4 with JWT verification enabled and the updated RPC parameter.
+- On successful or duplicate registration, the page displays the referral link, WhatsApp invite, and prominent progress toward three registered friends. Sharing is encouraged after signup but does not gate the workshop flow.
+- Updated README, `.env.example`, roadmap and this build log. Removed the YouTube destination from local `.env.local` without printing its contents.
+
+### Verification and limits
+
+- `npm run build` passed with TypeScript and Vite.
+- Supabase table inspection confirms `academic_year`; RPC inspection confirms the new parameter; migration listing confirms version `20261030140633`.
+- No synthetic person was inserted to exercise the live registration flow. The page records a Project DNA demo registration; it is not integrated with NxtWave's official enrollment system or email confirmation.
+- The first two database migrations remain unrecorded in the CLI migration history; reconcile them before any future `supabase db push`.
+
+### Checkpoint
+
+- `checkpoint: build 19 - in-app workshop registration and referral flow`

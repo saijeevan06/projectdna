@@ -7,6 +7,7 @@ const campaignId = Deno.env.get('CAMPAIGN_ID') || 'project-dna-workshop-2026'
 const maxBodyBytes = 10_000
 const events = new Set(['landing', 'path_start', 'result', 'workshop_cta_click', 'registration_form_start'])
 const branches = new Set(['CSE', 'IT', 'AI/ML', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Other'])
+const academicYears = new Set(['1st year', '2nd year', '3rd year', '4th year', '5th year', 'Other'])
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -100,13 +101,14 @@ Deno.serve(async (request) => {
   const userType = body.userType
   const student = userType === 'student'
   const branch = student && typeof body.branch === 'string' && branches.has(body.branch) ? body.branch : null
+  const academicYear = student && typeof body.academicYear === 'string' && academicYears.has(body.academicYear) ? body.academicYear : null
   const finalYear = student && typeof body.finalYearEngineering === 'boolean' ? body.finalYearEngineering : null
   const selectedProject = typeof body.selectedProject === 'string' ? body.selectedProject.trim() : ''
   const referralCode = typeof body.referralCode === 'string' && /^[A-Za-z0-9]{12}$/.test(body.referralCode.trim()) ? body.referralCode.trim().toUpperCase() : null
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (fullName.length < 2 || fullName.length > 120 || !emailPattern.test(email) || email.length > 254
     || college.length < 2 || college.length > 180 || (!student && userType !== 'developer')
-    || (student && (!branch || finalYear === null)) || selectedProject.length > 140 || body.consent !== true
+    || (student && (!branch || !academicYear || finalYear === null)) || selectedProject.length > 140 || body.consent !== true
     || !['improve', 'discover', 'unknown'].includes(path)) return json({ error: 'INVALID_REGISTRATION' }, 422)
 
   try {
@@ -117,6 +119,7 @@ Deno.serve(async (request) => {
       p_college: college,
       p_user_type: userType,
       p_branch: branch,
+      p_academic_year: academicYear,
       p_final_year_engineering: finalYear,
       p_selected_project: selectedProject,
       p_source: source,

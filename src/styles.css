@@ -34,3 +34,45 @@
 @media(max-width:480px){.invite-card{padding:25px 21px 29px}.invite-back{margin-bottom:36px}.invite-card h1{letter-spacing:-2.8px}}
 .project-card-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:16px}.project-card-actions .select-project{margin-top:0}.result-copy-button{margin:4px 0 18px}.admin-goal{margin:20px 0 26px;padding:16px 18px;background:#eef1e7;border:1px solid #d9e1d2;border-radius:4px}.admin-goal>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#4d5e50;font-size:13px}.admin-goal>div:first-child b{color:#314d35;font-size:15px}.admin-goal-track{height:8px;margin:12px 0 8px;background:#dce3d6;border-radius:20px;overflow:hidden}.admin-goal-track span{display:block;height:100%;background:linear-gradient(90deg,#6f9365,#c5df69);border-radius:inherit;transition:width .5s ease}.admin-goal small{color:#6d796d;font-size:11px}@media(max-width:560px){.project-card-actions{align-items:flex-start;flex-direction:column}.project-card-actions .select-project{width:100%}.admin-goal{padding:14px}}
 .audience-select{margin:26px 0 0;padding:0;border:0}.audience-select legend{margin-bottom:10px;color:#627064;font:500 9px 'DM Mono',monospace;letter-spacing:1px}.audience-select>div{display:flex;gap:8px;flex-wrap:wrap}.audience-select button{min-height:37px;padding:0 13px;border:1px solid #d7ddd2;border-radius:3px;background:#fbfbf6;color:#526257;font:600 11px 'DM Sans',sans-serif;cursor:pointer;transition:background .18s,border-color .18s,color .18s}.audience-select button:hover,.audience-select button.selected{border-color:#78916c;background:#e8eedf;color:#39553c}.audience-select button:focus-visible{outline:3px solid #96b75d;outline-offset:3px}.audience-select .form-error{margin:9px 0 0;font-size:11px}
+
+/* Dedicated workshop registration and referral milestone */
+.workshop-registration-page{min-height:100vh;display:flex;flex-direction:column;padding:26px clamp(20px,6vw,88px) 22px;background:var(--dna-paper);color:var(--dna-ink)}
+.workshop-registration-header{width:min(1080px,100%);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.workshop-registration-header .brand{color:var(--dna-ink);text-decoration:none}
+.workshop-registration-header .back-button{display:flex;align-items:center;gap:8px;border:0;background:transparent;font:600 12px 'DM Sans',sans-serif;cursor:pointer}
+.workshop-registration-card{width:min(620px,100%);margin:clamp(38px,7vh,74px) auto 44px;padding:clamp(25px,5vw,48px);background:#fbfbf6;border:1px solid #dfe3d9;box-shadow:0 22px 72px #17211e0c}
+.workshop-registration-card h1{margin:19px 0 13px;font-size:clamp(42px,7vw,64px);line-height:1.02;letter-spacing:-3.8px;font-weight:500;color:var(--dna-ink)}
+.workshop-registration-card h1 .serif-accent{color:#5e805a;letter-spacing:-3px}
+.workshop-registration-intro{margin:0 0 22px;color:#68766b;font-size:14px;line-height:1.65}
+.workshop-registration-card>.prototype-note{margin:0 0 24px;padding:12px 14px;border:1px solid #d9e3d0;border-radius:3px;background:#edf1e7;color:#586e54;font-size:11px;line-height:1.55}
+.workshop-registration-form{display:grid;gap:16px}
+.workshop-registration-form .field-label{display:grid;gap:8px;font:600 9px 'DM Mono',monospace;letter-spacing:.7px;color:#5c6b60}
+.workshop-registration-form .field-label input,.workshop-registration-form .field-label select{width:100%;height:46px;padding:0 12px;border:1px solid #d9ded4;border-radius:3px;background:#fff;color:#24342b;font:14px 'DM Sans',sans-serif;letter-spacing:0}
+.workshop-registration-form .field-label input:focus,.workshop-registration-form .field-label select:focus{outline:0;border-color:#74936e;box-shadow:0 0 0 3px #73956b18}
+.workshop-registration-form .registration-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.workshop-registration-form .registration-row .field-label:last-child{grid-column:1/-1}
+.workshop-registration-form .consent-label{display:flex;align-items:flex-start;gap:10px;margin:2px 0;color:#627064;font-size:11px;line-height:1.55}
+.workshop-registration-form .consent-label input{flex:0 0 auto;margin-top:3px;accent-color:#496b43}
+.workshop-registration-form>.continue-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;margin-top:3px;font:600 12px 'DM Sans',sans-serif;cursor:pointer}
+.workshop-registration-form>.continue-button:disabled{opacity:.62;cursor:wait}
+.workshop-registration-form .privacy-note{margin:0;color:#818c82;font-size:10px;line-height:1.5}
+.workshop-registration-card>.form-error{padding:13px 14px;border:1px solid #e7c9c4;background:#fcf0ee;color:#a3443e;font-size:12px;line-height:1.5}
+.registration-complete h2{margin:10px 0 8px;color:var(--dna-ink);font-size:28px;letter-spacing:-1px}
+.registration-complete>p{margin:0 0 22px;color:#68766b;font-size:13px;line-height:1.6}
+.registration-success-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#e6edd9;color:#426844}
+.referral-milestone{display:grid;gap:13px;padding:20px;background:#f5f8ef;border:1px solid #cfddcc}
+.referral-milestone>small{font:600 9px 'DM Mono',monospace;letter-spacing:1px;color:#526447}
+.referral-milestone h3{margin:-7px 0 0;color:#314d35;font-size:21px}
+.referral-progress-copy{display:flex;align-items:baseline;gap:8px;color:#657367;font-size:12px}
+.referral-progress-copy b{color:#314d35;font-size:20px}
+.referral-progress-track{height:8px;overflow:hidden;border-radius:20px;background:#dce3d6}
+.referral-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#6f9365,#c5df69);transition:width .35s ease}
+.referral-milestone p{margin:0;color:#68766b;font-size:11px;line-height:1.5}
+.referral-milestone code{display:block;overflow-wrap:anywhere;padding:11px;border:1px solid #e0e6da;background:#fff;color:#416a42;font:11px 'DM Mono',monospace}
+.referral-milestone .continue-button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:0;border-radius:3px;background:var(--dna-lime);color:#17211e;font:600 11px 'DM Sans',sans-serif;cursor:pointer}
+.referral-milestone>a{display:flex;align-items:center;justify-content:center;gap:5px;color:#416a42;font-size:11px;font-weight:600;text-decoration:none}
+.referral-milestone>.text-button{justify-self:center;font-size:10px}
+.referral-milestone>span{color:#657367;font-size:10px;text-align:center}
+.invite-copy-status{color:#526447;font-size:10px;text-align:center}
+.workshop-registration-footer{width:min(1080px,100%);margin:auto auto 0;padding-top:18px;border-top:1px solid #d9ded4;color:#819082;font-size:10px;text-align:center}
+@media(max-width:560px){.workshop-registration-page{padding:20px 16px}.workshop-registration-header .brand{font-size:14px}.workshop-registration-card{margin:34px auto 28px;padding:24px 20px}.workshop-registration-card h1{letter-spacing:-2.7px}.workshop-registration-form .registration-row{grid-template-columns:1fr}.workshop-registration-form .registration-row .field-label:last-child{grid-column:auto}}

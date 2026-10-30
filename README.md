@@ -4,7 +4,7 @@ Project DNA helps students and developers take a practical next step with a proj
 
 ## Current checkpoint
 
-**Build 17 — AI configured and Vercel deployment ready**
+**Build 19 — In-app workshop registration and 3-friend referral flow**
 
 - Responsive React + TypeScript + Vite application shell.
 - Landing page explains the two starting paths and the free AI workshop.
@@ -15,7 +15,8 @@ Project DNA helps students and developers take a practical next step with a proj
 - Path A accepts a public GitHub repository or pasted README/description, then returns a Gemini or Groq makeover when configured, with a deterministic template fallback.
 - Path B selects three role/profile-matched curated projects; the server can tailor their summaries and roadmaps with Gemini/Groq while preserving catalogue content.
 - Path B keeps its local curated-card fallback when the server function or providers are unavailable.
-- Result pages offer an optional official workshop handoff or a clearly labeled internal demo registration.
+- Result-page and footer workshop CTAs open a dedicated in-app registration page; they never redirect to a channel or external URL.
+- The registration page collects name, email, college, user type, and (for students) branch, academic year and final-year eligibility, plus explicit workshop-registration confirmation and consent. A successful demo registration opens a prominent 3-friend referral step.
 - Both makeover and recommendation results offer a copyable project brief.
 - Demo registration normalizes email, prevents duplicates per campaign and records self-reported student eligibility separately from official registrations.
 - Basic funnel events capture landing, path start, results, CTA clicks, registration form starts and saved demo registrations with source/path/session identifiers.
@@ -29,7 +30,7 @@ Project DNA helps students and developers take a practical next step with a proj
 - Added stronger focus states and contrast on the path cards.
 - Added an invitation callback screen that handles Supabase invite redirects, lets the invitee set a password using the short-lived access token, and explains expired or already-used links.
 - Users can review/edit answers; profile and project context remain session-scoped and are not saved.
-- GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. The workshop destination remains a placeholder until an approved URL is provided.
+- GitHub retrieval runs only through the Supabase Edge Function. Without Supabase configuration, the preview asks for pasted project text and uses the local deterministic template. Workshop registration is recorded in the Project DNA prototype; there is no integration to NxtWave's official enrollment system yet.
 
 ## Run locally
 
@@ -46,7 +47,7 @@ npx supabase@latest functions deploy demo-registration project-admin project-mak
 
 Keep JWT verification enabled. Supabase CLI authentication is required for deployment. Database migrations were applied through the Dashboard SQL Editor; reconcile their migration history before using `db push`.
 
-Put the project URL and the legacy JWT-style `anon` key in `.env.local` using [.env.example](.env.example) as a template. This code currently sends the anon key as a bearer token, so do not substitute a new `sb_publishable_...` key until function auth wiring is migrated. Supabase says legacy `anon` and `service_role` keys are being deprecated by the end of 2026; migration is the next backend build. Never add a service-role/secret key or AI provider key to frontend variables. Set `VITE_WORKSHOP_URL` only when an approved official workshop URL is available; without it, the result CTA opens the demo capture flow. Restart Vite after editing `.env.local`.
+Put the project URL and the legacy JWT-style `anon` key in `.env.local` using [.env.example](.env.example) as a template. This code currently sends the anon key as a bearer token, so do not substitute a new `sb_publishable_...` key until function auth wiring is migrated. Supabase says legacy `anon` and `service_role` keys are being deprecated by the end of 2026; migration is the next backend build. Never add a service-role/secret key or AI provider key to frontend variables. Workshop CTAs always open the in-app registration page; the demo record is not an official NxtWave enrollment. Restart Vite after editing `.env.local`.
 
 For local Auth invitations, this Vite app runs at `http://localhost:5173`. In Supabase Authentication → URL Configuration, set the Site URL to `http://localhost:5173` and add `http://localhost:5173/**` to Redirect URLs. The Dashboard invite uses the Site URL by default; a link sent while the Site URL pointed to `localhost:3000` will fail because this app is not listening there. Invite links are one-time and expire according to the project’s email OTP expiry; after fixing the URL, send a fresh invitation.
 
@@ -58,9 +59,9 @@ values ('AUTH_USER_UUID', true)
 on conflict (user_id) do update set is_active = true;
 ```
 
-Both migrations have been applied to the live Supabase project, and all four Edge Functions are active with JWT verification enabled. The Gemini API key is now configured in Supabase Secrets. End-to-end registration/referral/admin journeys still need a live review. Dashboard-applied migrations are not yet reconciled into CLI migration history; do that before any `supabase db push`.
+The schema migrations are applied to the live Supabase project, and all four Edge Functions are active with JWT verification enabled. The Gemini API key is configured in Supabase Secrets. Registration and referral now run through an in-app page, and the `academic_year` field is stored by the registration RPC. End-to-end registration/referral/admin journeys still need a live review. The first two migrations, originally applied outside the CLI, are not yet reconciled into CLI migration history; do that before any `supabase db push`.
 
-To enable AI tailoring, open Supabase Dashboard → Edge Functions → Secrets and add `GEMINI_API_KEY` (the value from Google AI Studio). The app already reads this server-side secret; never place it in `.env.local`, a `VITE_` variable, or the browser. `GEMINI_MODEL` is explicitly set to `gemini-3.8-flash`; it is also the code default. A Groq key is optional fallback configuration. When provider keys are absent or calls fail, curated/template results remain available. A local-only variable-name template is at [supabase/functions/.env.example](supabase/functions/.env.example); copy it to `supabase/functions/.env` only for local Edge Function development and never commit populated secrets.
+`GEMINI_API_KEY` is configured as a Supabase Edge Function secret; never place it in `.env.local`, a `VITE_` variable, or the browser. `GEMINI_MODEL` is explicitly set to `gemini-3.8-flash`; it is also the code default. A Groq key is optional fallback configuration. When provider keys are absent or calls fail, curated/template results remain available. A local-only variable-name template is at [supabase/functions/.env.example](supabase/functions/.env.example); copy it to `supabase/functions/.env` only for local Edge Function development and never commit populated secrets.
 
 `ALLOWED_ORIGIN` is currently `http://localhost:5173` for local verification. After Vercel has a production URL, update this Edge Function secret to that exact origin before using the deployed site. `CAMPAIGN_ID` defaults in the function code to `project-dna-workshop-2026`.
 
@@ -70,9 +71,7 @@ The project is a Vite single-page app. Import the repository into Vercel with th
 
 - `VITE_SUPABASE_URL` — the Supabase project URL.
 - `VITE_SUPABASE_ANON_KEY` — the legacy JWT-style anon key currently used in the Authorization bearer header.
-- `VITE_WORKSHOP_URL` — optional; add only the approved official workshop registration URL.
-
-Do not add `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` or any Supabase secret key to Vercel frontend variables. Once Vercel gives you the production domain, set that exact HTTPS origin as the Supabase Edge Function `ALLOWED_ORIGIN` and add the production URL to Supabase Authentication → URL Configuration → Site URL and Redirect URLs. The current allowed origin is local development only.
+Do not add `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` or any Supabase secret key to Vercel frontend variables. Workshop CTAs no longer read `VITE_WORKSHOP_URL`; remove any old YouTube value from Vercel settings to avoid confusion. Once Vercel gives you the production domain, set that exact HTTPS origin as the Supabase Edge Function `ALLOWED_ORIGIN` and add the production URL to Supabase Authentication → URL Configuration → Site URL and Redirect URLs. The current allowed origin is local development only.
 
 Create a production bundle with `npm run build`.
 
